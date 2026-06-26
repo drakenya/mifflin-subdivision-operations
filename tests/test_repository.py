@@ -2,6 +2,7 @@ import pytest
 from pathlib import Path
 from waybill_generator.repository.yaml_repo import YamlRepository
 from waybill_generator.models.waybill import LoadedWaybill, EmptyWaybill, BadOrderWaybill
+from waybill_generator.models.railroad import Railroad
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -19,7 +20,7 @@ class TestYamlRepositoryCars:
     def test_get_car_by_id(self, repo):
         car = repo.get_car("PRR-12345")
         assert car.road == "PRR"
-        assert car.car_type == "X29"
+        assert car.aar_code == "XM"
         assert car.capacity_tons == 50
 
     def test_get_car_missing_raises(self, repo):
@@ -94,3 +95,19 @@ class TestYamlRepositoryWaybills:
         from waybill_generator.models.waybill import HoldWaybill
         w = repo.get_waybill("hold-1")
         assert isinstance(w, HoldWaybill)
+
+
+class TestYamlRepositoryRailroads:
+    def test_get_railroads_returns_all(self, repo):
+        railroads = repo.get_railroads()
+        assert len(railroads) == 1
+
+    def test_get_railroad_by_id(self, repo):
+        r = repo.get_railroad("PRR")
+        assert r.name == "Pennsylvania Railroad"
+        assert r.form_number == "Form 1304"
+        assert r.icon is None
+
+    def test_get_railroad_missing_raises(self, repo):
+        with pytest.raises(KeyError):
+            repo.get_railroad("MISSING")

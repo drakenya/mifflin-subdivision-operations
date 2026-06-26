@@ -14,5 +14,6 @@ class Industry(BaseModel):
 class Location(BaseModel):
     id: str
     name: str
+    state: str = "PA"
     subdivision: str | None = None
     industries: list[Industry] = []

@@ -4,10 +4,11 @@ import yaml
 import click
 from waybill_generator.config import load_config
 from waybill_generator.repository.yaml_repo import YamlRepository
-from waybill_generator.layouts.standard_prr import StandardPrrLayout
+from waybill_generator.layouts.modelling_the_sp import StandardPrrLayout
+from waybill_generator.models.waybill import LoadedWaybill
 from waybill_generator.renderer.pdf import render_pdf
 
-_LAYOUTS = {"standard_prr": StandardPrrLayout}
+_LAYOUTS = {"modelling_the_sp": StandardPrrLayout}
 
 
 @click.group()
@@ -36,16 +37,28 @@ def _get_repo(ctx):
 @click.pass_context
 def generate(ctx, session, output):
     """Generate a PDF from a session file."""
-    session_data = yaml.safe_load(Path(session).read_text())
-    if not isinstance(session_data, dict):
-        raise click.UsageError("Session file is empty or invalid — expected 'cards:' list at top level")
+    session_data = yaml.safe_load(Path(session).read_text()) or {}
     repo = _get_repo(ctx)
 
-    pairs = []
+    triples = []
     for card in session_data.get("cards", []):
         car = repo.get_car(card["car"])
         waybill = repo.get_waybill(card["waybill"])
-        pairs.append((car, waybill))
+        railroad = repo.get_railroad(waybill.originating_railroad_id)
+        if isinstance(waybill, LoadedWaybill):
+            consignee_ind = repo.get_industry(waybill.consignee_id)
+            consignee_loc = repo.get_location(consignee_ind.location_id)
+            shipper_ind = repo.get_industry(waybill.shipper_id)
+            shipper_loc = repo.get_location(shipper_ind.location_id)
+            waybill = waybill.model_copy(update={
+                "to_city": consignee_loc.name,
+                "to_state": consignee_loc.state,
+                "consignee_name": consignee_ind.name,
+                "from_city": shipper_loc.name,
+                "from_state": shipper_loc.state,
+                "shipper_name": shipper_ind.name,
+            })
+        triples.append((car, waybill, railroad))
 
     layout_cls = _LAYOUTS.get(ctx.obj["layout"])
     if layout_cls is None:
@@ -57,7 +70,7 @@ def generate(ctx, session, output):
         out_dir.mkdir(parents=True, exist_ok=True)
         output = str(out_dir / f"waybills-{date.today().isoformat()}.pdf")
 
-    render_pdf(pairs, layout, output)
+    render_pdf(triples, layout, output)
     click.echo(f"Generated: {output}")
 
 
@@ -74,7 +87,14 @@ def list_cars(ctx):
     repo = _get_repo(ctx)
     for car in repo.get_cars():
         status = "" if car.active else "  [inactive]"
-        click.echo(f"{car.id:<20} {car.car_type}/{car.aar_code}  {car.capacity_tons}T{status}")
+        click.echo(f"{car.id:<20} {car.capacity_tons}T{status}")
+
+
+@list_group.command("layouts")
+def list_layouts():
+    """List available layout names for --layout."""
+    for name in _LAYOUTS:
+        click.echo(name)
 
 
 @list_group.command("waybills")
@@ -104,6 +124,7 @@ def validate(ctx):
         ("Locations", repo.get_locations),
         ("Commodities", repo.get_commodities),
         ("Waybills", repo.get_waybills),
+        ("Railroads", repo.get_railroads),
     ]:
         try:
             items = loader()

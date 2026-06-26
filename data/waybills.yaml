@@ -2,6 +2,7 @@
 
 - id: waybill-1
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: grain
   shipper_id: LEW-GRAIN
   consignee_id: HBG-FREIGHT
@@ -9,6 +10,7 @@
 
 - id: waybill-2
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: coal
   shipper_id: LJ-YARD
   consignee_id: BRN-SSW
@@ -16,31 +18,40 @@
 
 - id: waybill-3
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: iron-ore
   shipper_id: PGH-YARD
   consignee_id: BRN-SSW
 
 - id: waybill-4
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: limestone
   shipper_id: MCV-LIME
   consignee_id: BRN-SSW
 
 - id: waybill-5
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: limestone
   shipper_id: MCV-LIME
   consignee_id: LEW-CEMENT
 
 - id: waybill-6
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: wheel-sets
   shipper_id: BRN-SSW
   consignee_id: ALT-SHOP
+  routing:
+    - LJ
+    - ALT
+  stop_at: Altoona Shops
   notes: Wheel sets for Altoona Shops
 
 - id: waybill-7
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: wheel-sets
   shipper_id: BRN-SSW
   consignee_id: PGH-STEEL
@@ -50,42 +61,49 @@
 
 - id: waybill-8
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: steel
   shipper_id: BRN-SSW
   consignee_id: PGH-STEEL
 
 - id: waybill-9
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: flour
   shipper_id: LEW-GRAIN
   consignee_id: HBG-FREIGHT
 
 - id: waybill-10
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: cement
   shipper_id: LEW-CEMENT
   consignee_id: MIF-FREIGHT
 
 - id: waybill-11
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: lumber
   shipper_id: HBG-YARD
   consignee_id: LEW-FREIGHT
 
 - id: waybill-12
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: canned-goods
   shipper_id: HBG-YARD
   consignee_id: MIF-FREIGHT
 
 - id: waybill-13
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: general-merchandise
   shipper_id: HBG-FREIGHT
   consignee_id: LEW-FREIGHT
 
 - id: waybill-14
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: grain
   shipper_id: MIF-GRAIN
   consignee_id: HBG-FREIGHT
@@ -94,62 +112,79 @@
 
 - id: empty-1
   waybill_type: EMPTY
+  originating_railroad_id: PRR
   from_location_id: ALT
   to_location_id: LEW
 
 - id: empty-2
   waybill_type: EMPTY
+  originating_railroad_id: PRR
   from_location_id: HBG
   to_location_id: BRN
+  shipper_ordered_by: Standard Steel Works
+  spot: "Track 1"
   notes: Empty hopper to Standard Steel
 
 - id: empty-3
   waybill_type: EMPTY
+  originating_railroad_id: PRR
   from_location_id: PGH
   to_location_id: MCV
+  shipper_ordered_by: McVeytown Limestone Quarry
+  spot: "Track 1"
   notes: Empty gondola to quarry
 
 - id: empty-4
   waybill_type: EMPTY
+  originating_railroad_id: PRR
   from_location_id: BRN
   to_location_id: MCV
   notes: Empty after limestone delivery
 
 - id: empty-5
   waybill_type: EMPTY
+  originating_railroad_id: PRR
   from_location_id: ALT
   to_location_id: HBG
 
 - id: empty-6
   waybill_type: EMPTY
+  originating_railroad_id: PRR
   from_location_id: LEW
   to_location_id: PGH
+  home_billed_from: Lewistown, PA
+  home_to_or_via: New York via HBG
+  home_rr: NYC
   notes: Empty boxcar returning east
 
 # ── DEADHEAD ─────────────────────────────────────────────────────────────────
 
 - id: deadhead-1
   waybill_type: DEADHEAD
+  originating_railroad_id: PRR
   from_location_id: PGH
   to_location_id: ALT
   consist_note: PRR 4100 combine
 
 - id: deadhead-2
   waybill_type: DEADHEAD
+  originating_railroad_id: PRR
   from_location_id: HBG
   to_location_id: ALT
-  consist_note: PRR 3672 coach — Altoona for inspection
+  consist_note: PRR 3672 coach - Altoona for inspection
 
 - id: deadhead-3
   waybill_type: DEADHEAD
+  originating_railroad_id: PRR
   from_location_id: ALT
   to_location_id: PGH
-  consist_note: PRR 5821 RPO — return after repair
+  consist_note: PRR 5821 RPO - return after repair
 
 # ── MAINTENANCE OF WAY ───────────────────────────────────────────────────────
 
 - id: mow-1
   waybill_type: MOW
+  originating_railroad_id: PRR
   commodity_desc: Ballast
   from_location_id: ALT
   to_location_id: LEW
@@ -157,6 +192,7 @@
 
 - id: mow-2
   waybill_type: MOW
+  originating_railroad_id: PRR
   commodity_desc: Tie plates and spikes
   from_location_id: ALT
   to_location_id: MIF
@@ -164,62 +200,72 @@
 
 - id: mow-3
   waybill_type: MOW
+  originating_railroad_id: PRR
   commodity_desc: 115 lb. relay rail
   from_location_id: LJ
   to_location_id: BRN
-  project: Yard track renewal — Standard Steel lead
+  project: Yard track renewal - Standard Steel lead
 
 - id: mow-4
   waybill_type: MOW
+  originating_railroad_id: PRR
   commodity_desc: Ballast
   from_location_id: ALT
   to_location_id: HBG
-  project: Grade stabilization — Tuscarora cut
+  project: Grade stabilization - Tuscarora cut
 
 # ── HOLD ─────────────────────────────────────────────────────────────────────
 
 - id: hold-1
   waybill_type: HOLD
+  originating_railroad_id: PRR
   industry_id: LEW-GRAIN
   waiting_for: Load order from elevator
 
 - id: hold-2
   waybill_type: HOLD
+  originating_railroad_id: PRR
   industry_id: BRN-SSW
-  waiting_for: Production cycle — next wheel set cast
+  waiting_for: Production cycle - next wheel set cast
 
 - id: hold-3
   waybill_type: HOLD
+  originating_railroad_id: PRR
   industry_id: MCV-LIME
   waiting_for: Car release from quarry tipple
 
 - id: hold-4
   waybill_type: HOLD
+  originating_railroad_id: PRR
   industry_id: LEW-FREIGHT
-  waiting_for: Consignee pickup — Lewistown Hardware Co.
+  waiting_for: Consignee pickup - Lewistown Hardware Co.
 
 # ── BAD ORDER ────────────────────────────────────────────────────────────────
 
 - id: badorder-1
   waybill_type: BAD_ORDER
+  originating_railroad_id: PRR
   from_location_id: LEW
   shop_location_id: ALT
   defect: Broken coupler knuckle
 
 - id: badorder-2
   waybill_type: BAD_ORDER
+  originating_railroad_id: PRR
   from_location_id: BRN
   shop_location_id: ALT
-  defect: Hotbox — journal bearing failure
+  defect: Hotbox - journal bearing failure
 
 - id: badorder-3
   waybill_type: BAD_ORDER
+  originating_railroad_id: PRR
   from_location_id: HBG
   shop_location_id: ALT
-  defect: Defective brake gear — hand brake inoperative
+  defect: Defective brake gear - hand brake inoperative
 
 - id: badorder-4
   waybill_type: BAD_ORDER
+  originating_railroad_id: PRR
   from_location_id: MIF
   shop_location_id: ALT
-  defect: Cracked center sill — shop inspection required
+  defect: Cracked center sill - shop inspection required

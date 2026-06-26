@@ -1,33 +1,39 @@
 - id: waybill-1
   waybill_type: LOADED
+  originating_railroad_id: PRR
   commodity_id: grain
   shipper_id: LEW-GRAIN
   consignee_id: ALT-SHOP
 
 - id: empty-1
   waybill_type: EMPTY
+  originating_railroad_id: PRR
   from_location_id: ALT
   to_location_id: LEW
 
 - id: badorder-1
   waybill_type: BAD_ORDER
+  originating_railroad_id: PRR
   from_location_id: LEW
   shop_location_id: ALT
   defect: Broken coupler
 
 - id: deadhead-1
   waybill_type: DEADHEAD
+  originating_railroad_id: PRR
   from_location_id: PHL
   to_location_id: PGH
   consist_note: PRR 4100 combine
 
 - id: mow-1
   waybill_type: MOW
+  originating_railroad_id: PRR
   commodity_desc: Ballast
   from_location_id: ALT
   to_location_id: LEW
 
 - id: hold-1
   waybill_type: HOLD
+  originating_railroad_id: PRR
   industry_id: LEW-GRAIN
   waiting_for: Load order

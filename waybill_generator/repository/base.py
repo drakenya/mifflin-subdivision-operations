@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from waybill_generator.models.car import Car
-from waybill_generator.models.location import Location
+from waybill_generator.models.location import Location, Industry
 from waybill_generator.models.commodity import Commodity
 from waybill_generator.models.waybill import WaybillBase
+from waybill_generator.models.railroad import Railroad
 
 
 class BaseRepository(ABC):
@@ -29,3 +30,12 @@ class BaseRepository(ABC):
 
     @abstractmethod
     def get_waybill(self, id: str) -> WaybillBase: ...
+
+    @abstractmethod
+    def get_railroads(self) -> list[Railroad]: ...
+
+    @abstractmethod
+    def get_railroad(self, id: str) -> Railroad: ...
+
+    @abstractmethod
+    def get_industry(self, id: str) -> Industry: ...

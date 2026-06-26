@@ -18,6 +18,7 @@ def test_validate_passes_with_valid_data():
     assert result.exit_code == 0
     assert "Cars: 2" in result.output
     assert "Waybills: 6" in result.output
+    assert "Railroads: 1" in result.output
 
 
 def test_list_cars():

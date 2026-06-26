@@ -56,3 +56,18 @@ Reports any schema errors in your data files before you try to print.
 pytest              # run tests
 ruff check .        # lint
 ```
+
+### Regenerate test output PDFs
+
+```bash
+for session in sessions/test-*.yaml; do
+  waybill generate --session "$session" --output "output/$(basename "$session" .yaml).pdf"
+done
+```
+
+# References
+
+## Modelling the SP
+
+- [Waybill](https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVVnVkvat0nRT-khQaC9LS1FbUfQ9mmxKKYTk6w7winN5X7Kn8G32wd54531eJkffAZKj-u_buT1BUm-9UveU2YU-UdJLEZWAvLTd-eQloY3Ur6O3XLtROicYxip5BAnGS9Lp3TYaQu8E/s1600/oil+bills.jpg)
+- [Empty Car](https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVVnVkvat0nRT-khQaC9LS1FbUfQ9mmxKKYTk6w7winN5X7Kn8G32wd54531eJkffAZKj-u_buT1BUm-9UveU2YU-UdJLEZWAvLTd-eQloY3Ur6O3XLtROicYxip5BAnGS9Lp3TYaQu8E/s1600/oil+bills.jpg)

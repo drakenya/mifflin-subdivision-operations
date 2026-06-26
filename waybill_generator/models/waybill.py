@@ -15,6 +15,7 @@ class WaybillType(str, Enum):
 class WaybillBase(BaseModel):
     id: str
     waybill_type: WaybillType
+    originating_railroad_id: str
     notes: str | None = None
 
 
@@ -24,12 +25,25 @@ class LoadedWaybill(WaybillBase):
     shipper_id: str
     consignee_id: str
     routing: list[str] = []
+    stop_at: str | None = None
+    # Resolved display fields (populated at render time, not stored in YAML)
+    to_city: str | None = None
+    to_state: str | None = None
+    consignee_name: str | None = None
+    from_city: str | None = None
+    from_state: str | None = None
+    shipper_name: str | None = None
 
 
 class EmptyWaybill(WaybillBase):
     waybill_type: Literal["EMPTY"] = "EMPTY"
     from_location_id: str
     to_location_id: str
+    spot: str | None = None
+    shipper_ordered_by: str | None = None
+    home_billed_from: str | None = None
+    home_to_or_via: str | None = None
+    home_rr: str | None = None
 
 
 class DeadheadWaybill(WaybillBase):

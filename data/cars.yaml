@@ -1,11 +1,8 @@
 # PRR Mifflin Subdivision car roster — sample data
-# X29/X32/X37 = PRR 40' boxcars; H21a = 70T open hopper; H30 = 100T covered hopper
-# G22/G28 = gondola; F30a = flatcar; TM = tank; RS = refrigerator
 
 - id: PRR-12345
   road: PRR
   car_number: "12345"
-  car_type: X29
   aar_code: XM
   capacity_tons: 50
   capacity_cuft: 3020
@@ -15,7 +12,6 @@
 - id: PRR-67890
   road: PRR
   car_number: "67890"
-  car_type: H21a
   aar_code: HM
   capacity_tons: 70
   active: true
@@ -23,7 +19,6 @@
 - id: PRR-47823
   road: PRR
   car_number: "47823"
-  car_type: X29
   aar_code: XM
   capacity_tons: 50
   capacity_cuft: 3020
@@ -33,7 +28,6 @@
 - id: PRR-52167
   road: PRR
   car_number: "52167"
-  car_type: X32
   aar_code: XM
   capacity_tons: 50
   capacity_cuft: 3040
@@ -43,7 +37,6 @@
 - id: PRR-61044
   road: PRR
   car_number: "61044"
-  car_type: X37
   aar_code: XM
   capacity_tons: 50
   capacity_cuft: 3286
@@ -54,7 +47,6 @@
 - id: PRR-100432
   road: PRR
   car_number: "100432"
-  car_type: H21a
   aar_code: HM
   capacity_tons: 70
   active: true
@@ -62,7 +54,6 @@
 - id: PRR-155789
   road: PRR
   car_number: "155789"
-  car_type: H21a
   aar_code: HM
   capacity_tons: 70
   active: true
@@ -70,7 +61,6 @@
 - id: PRR-200156
   road: PRR
   car_number: "200156"
-  car_type: H30
   aar_code: LO
   capacity_tons: 100
   active: true
@@ -79,7 +69,6 @@
 - id: PRR-68200
   road: PRR
   car_number: "68200"
-  car_type: G28
   aar_code: GB
   capacity_tons: 50
   length_ft: 46
@@ -88,7 +77,6 @@
 - id: PRR-75340
   road: PRR
   car_number: "75340"
-  car_type: G22
   aar_code: GB
   capacity_tons: 40
   length_ft: 40
@@ -97,7 +85,6 @@
 - id: PRR-30047
   road: PRR
   car_number: "30047"
-  car_type: F30a
   aar_code: FM
   capacity_tons: 50
   length_ft: 40
@@ -106,7 +93,6 @@
 - id: PRR-82341
   road: PRR
   car_number: "82341"
-  car_type: X29
   aar_code: XM
   capacity_tons: 50
   capacity_cuft: 3020
@@ -117,7 +103,6 @@
 - id: NYC-158923
   road: NYC
   car_number: "158923"
-  car_type: DS-1
   aar_code: XM
   capacity_tons: 50
   capacity_cuft: 3040
@@ -128,7 +113,6 @@
 - id: B&O-486321
   road: B&O
   car_number: "486321"
-  car_type: M-26
   aar_code: HM
   capacity_tons: 70
   active: true
@@ -137,7 +121,6 @@
 - id: RDG-74521
   road: RDG
   car_number: "74521"
-  car_type: XM
   aar_code: XM
   capacity_tons: 50
   capacity_cuft: 2980

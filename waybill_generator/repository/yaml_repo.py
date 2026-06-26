@@ -3,9 +3,10 @@ import yaml
 from pydantic import TypeAdapter
 from waybill_generator.repository.base import BaseRepository
 from waybill_generator.models.car import Car
-from waybill_generator.models.location import Location
+from waybill_generator.models.location import Location, Industry
 from waybill_generator.models.commodity import Commodity
 from waybill_generator.models.waybill import WaybillBase, Waybill
+from waybill_generator.models.railroad import Railroad
 
 _waybill_adapter = TypeAdapter(Waybill)
 
@@ -17,6 +18,7 @@ class YamlRepository(BaseRepository):
         self._locations: dict[str, Location] | None = None
         self._commodities: dict[str, Commodity] | None = None
         self._waybills: dict[str, WaybillBase] | None = None
+        self._railroads: dict[str, Railroad] | None = None
 
     def _load(self, filename: str) -> list[dict]:
         return yaml.safe_load((self._path / filename).read_text()) or []
@@ -83,3 +85,26 @@ class YamlRepository(BaseRepository):
         if id not in waybills:
             raise KeyError(f"Waybill not found: {id!r}")
         return waybills[id]
+
+    def _ensure_railroads(self) -> dict[str, Railroad]:
+        if self._railroads is None:
+            self._railroads = {
+                r.id: r for r in [Railroad(**row) for row in self._load("railroads.yaml")]
+            }
+        return self._railroads
+
+    def get_railroads(self) -> list[Railroad]:
+        return list(self._ensure_railroads().values())
+
+    def get_railroad(self, id: str) -> Railroad:
+        railroads = self._ensure_railroads()
+        if id not in railroads:
+            raise KeyError(f"Railroad not found: {id!r}")
+        return railroads[id]
+
+    def get_industry(self, id: str) -> Industry:
+        for loc in self._ensure_locations().values():
+            for industry in loc.industries:
+                if industry.id == id:
+                    return industry
+        raise KeyError(f"Industry not found: {id!r}")
