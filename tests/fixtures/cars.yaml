@@ -1,0 +1,17 @@
+- id: PRR-12345
+  road: PRR
+  car_number: "12345"
+  car_type: X29
+  aar_code: XM
+  capacity_tons: 50
+  capacity_cuft: 3020
+  length_ft: 40
+  active: true
+
+- id: PRR-67890
+  road: PRR
+  car_number: "67890"
+  car_type: H21a
+  aar_code: HM
+  capacity_tons: 70
+  active: false

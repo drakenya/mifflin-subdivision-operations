@@ -1,0 +1,12 @@
+- id: grain
+  name: Grain
+  aar_code: "01110"
+  acceptable_car_types:
+    - XM
+
+- id: coal
+  name: Bituminous Coal
+  aar_code: "01210"
+  acceptable_car_types:
+    - HM
+    - GB

@@ -1,0 +1,28 @@
+# Exactly 9 cards — one full page, one of each waybill type plus extras
+cards:
+  - car: PRR-12345
+    waybill: waybill-1        # LOADED grain → Harrisburg
+
+  - car: PRR-100432
+    waybill: waybill-2        # LOADED coal → Standard Steel
+
+  - car: PRR-68200
+    waybill: waybill-4        # LOADED limestone → Standard Steel
+
+  - car: PRR-30047
+    waybill: waybill-6        # LOADED wheel sets → Altoona Shops
+
+  - car: PRR-67890
+    waybill: empty-2          # EMPTY hopper to Burnham
+
+  - car: NYC-158923
+    waybill: empty-6          # EMPTY foreign boxcar returning east
+
+  - car: PRR-47823
+    waybill: hold-1           # HOLD at Lewistown Grain
+
+  - car: PRR-82341
+    waybill: badorder-1       # BAD ORDER broken coupler → Altoona
+
+  - car: PRR-155789
+    waybill: mow-1            # MOW ballast run

@@ -1,0 +1,76 @@
+- id: grain
+  name: Grain
+  aar_code: "01110"
+  acceptable_car_types:
+    - XM
+    - LO
+
+- id: flour
+  name: Flour
+  aar_code: "01130"
+  acceptable_car_types:
+    - XM
+    - LO
+
+- id: coal
+  name: Bituminous Coal
+  aar_code: "01210"
+  acceptable_car_types:
+    - HM
+    - GB
+
+- id: iron-ore
+  name: Iron Ore
+  aar_code: "01310"
+  acceptable_car_types:
+    - HM
+    - GB
+
+- id: limestone
+  name: Limestone
+  aar_code: "01420"
+  acceptable_car_types:
+    - HM
+    - GB
+
+- id: steel
+  name: Steel Products
+  aar_code: "03110"
+  acceptable_car_types:
+    - FM
+    - GB
+    - XM
+
+- id: wheel-sets
+  name: Wheel Sets and Axles
+  aar_code: "03190"
+  acceptable_car_types:
+    - FM
+    - GB
+
+- id: lumber
+  name: Lumber
+  aar_code: "02410"
+  acceptable_car_types:
+    - FM
+    - XM
+
+- id: cement
+  name: Portland Cement
+  aar_code: "01910"
+  acceptable_car_types:
+    - XM
+    - LO
+
+- id: canned-goods
+  name: Canned Goods
+  aar_code: "05120"
+  acceptable_car_types:
+    - XM
+    - RS
+
+- id: general-merchandise
+  name: General Merchandise (LCL)
+  aar_code: "09999"
+  acceptable_car_types:
+    - XM

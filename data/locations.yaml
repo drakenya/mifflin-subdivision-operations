@@ -1,0 +1,180 @@
+# Mifflin Subdivision locations — west to east (roughly)
+# Real PRR station names on the Lewistown Branch / Middle Division
+
+- id: ALT
+  name: Altoona
+  subdivision: Middle
+  industries:
+    - id: ALT-SHOP
+      name: Altoona Shops
+      location_id: ALT
+      track: shop
+      car_capacity: 20
+      ships: []
+      receives: []
+    - id: ALT-YARD
+      name: Altoona Yard
+      location_id: ALT
+      track: yard
+      car_capacity: 50
+      ships: []
+      receives: []
+
+- id: BRN
+  name: Burnham
+  subdivision: Mifflin
+  industries:
+    - id: BRN-SSW
+      name: Standard Steel Works
+      location_id: BRN
+      track: "1"
+      car_capacity: 8
+      ships:
+        - wheel-sets
+        - steel
+      receives:
+        - coal
+        - iron-ore
+        - limestone
+
+- id: MCV
+  name: McVeytown
+  subdivision: Mifflin
+  industries:
+    - id: MCV-LIME
+      name: McVeytown Limestone Quarry
+      location_id: MCV
+      track: "1"
+      car_capacity: 6
+      ships:
+        - limestone
+      receives: []
+
+- id: MIF
+  name: Mifflin
+  subdivision: Mifflin
+  industries:
+    - id: MIF-FREIGHT
+      name: PRR Mifflin Freight House
+      location_id: MIF
+      track: freight
+      car_capacity: 4
+      ships: []
+      receives:
+        - canned-goods
+        - lumber
+        - cement
+        - general-merchandise
+    - id: MIF-GRAIN
+      name: Mifflin Grain Co.
+      location_id: MIF
+      track: "2"
+      car_capacity: 3
+      ships:
+        - grain
+        - flour
+      receives: []
+
+- id: MFT
+  name: Mifflintown
+  subdivision: Mifflin
+  industries:
+    - id: MFT-FREIGHT
+      name: PRR Mifflintown Freight House
+      location_id: MFT
+      track: freight
+      car_capacity: 3
+      ships: []
+      receives:
+        - general-merchandise
+        - lumber
+
+- id: LEW
+  name: Lewistown
+  subdivision: Mifflin
+  industries:
+    - id: LEW-GRAIN
+      name: Lewistown Grain Elevator
+      location_id: LEW
+      track: "1"
+      car_capacity: 3
+      ships:
+        - grain
+        - flour
+      receives: []
+    - id: LEW-CEMENT
+      name: Lewistown Cement Co.
+      location_id: LEW
+      track: "2"
+      car_capacity: 2
+      ships:
+        - cement
+      receives:
+        - limestone
+    - id: LEW-FREIGHT
+      name: PRR Lewistown Freight House
+      location_id: LEW
+      track: freight
+      car_capacity: 5
+      ships: []
+      receives:
+        - general-merchandise
+        - canned-goods
+        - lumber
+
+- id: LJ
+  name: Lewistown Junction
+  subdivision: Mifflin
+  industries:
+    - id: LJ-YARD
+      name: Lewistown Junction Yard
+      location_id: LJ
+      track: yard
+      car_capacity: 20
+      ships: []
+      receives: []
+
+- id: HBG
+  name: Harrisburg
+  subdivision: Middle
+  industries:
+    - id: HBG-YARD
+      name: Enola Yard (Harrisburg)
+      location_id: HBG
+      track: yard
+      car_capacity: 50
+      ships: []
+      receives: []
+    - id: HBG-FREIGHT
+      name: PRR Harrisburg Freight House
+      location_id: HBG
+      track: freight
+      car_capacity: 6
+      ships: []
+      receives:
+        - general-merchandise
+        - flour
+        - canned-goods
+
+- id: PGH
+  name: Pittsburgh
+  subdivision: Pittsburgh
+  industries:
+    - id: PGH-YARD
+      name: Conway Yard (Pittsburgh)
+      location_id: PGH
+      track: yard
+      car_capacity: 50
+      ships: []
+      receives: []
+    - id: PGH-STEEL
+      name: U.S. Steel — Homestead Works
+      location_id: PGH
+      track: "1"
+      car_capacity: 10
+      ships:
+        - steel
+      receives:
+        - iron-ore
+        - coal
+        - wheel-sets

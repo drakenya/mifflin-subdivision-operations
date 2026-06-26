@@ -1,0 +1,5 @@
+[defaults]
+layout = "standard_prr"
+data_source = "yaml"
+data_path = "./data"
+output_dir = "./output"

@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "waybill-generator"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8",
+    "pydantic>=2",
+    "reportlab>=4",
+    "pyyaml>=6",
+]
+
+[project.scripts]
+waybill = "waybill_generator.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov", "ruff"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

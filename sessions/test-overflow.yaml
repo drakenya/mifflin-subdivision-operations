@@ -1,0 +1,32 @@
+# 10 cards — tests page overflow (9 on page 1, 1 on page 2)
+cards:
+  - car: PRR-12345
+    waybill: waybill-1
+
+  - car: PRR-47823
+    waybill: waybill-5        # LOADED limestone → Lewistown Cement
+
+  - car: PRR-52167
+    waybill: waybill-10       # LOADED cement → Mifflin Freight
+
+  - car: PRR-100432
+    waybill: waybill-2
+
+  - car: PRR-155789
+    waybill: empty-4          # EMPTY after limestone delivery
+
+  - car: PRR-68200
+    waybill: waybill-8        # LOADED steel → Pittsburgh
+
+  - car: PRR-30047
+    waybill: waybill-7        # LOADED wheel sets → Pittsburgh
+
+  - car: B&O-486321
+    waybill: hold-3           # HOLD at McVeytown Quarry
+
+  - car: PRR-67890
+    waybill: mow-2            # MOW tie plates → Mifflin
+
+  # Card 10 — spills onto page 2
+  - car: PRR-82341
+    waybill: badorder-4       # BAD ORDER cracked sill

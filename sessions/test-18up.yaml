@@ -1,0 +1,57 @@
+# 18 cards — two full pages
+cards:
+  # Page 1
+  - car: PRR-12345
+    waybill: waybill-1        # LOADED grain → Harrisburg
+
+  - car: PRR-100432
+    waybill: waybill-2        # LOADED coal → Standard Steel
+
+  - car: B&O-486321
+    waybill: waybill-3        # LOADED iron ore → Standard Steel
+
+  - car: PRR-75340
+    waybill: waybill-4        # LOADED limestone → Standard Steel
+
+  - car: PRR-30047
+    waybill: waybill-6        # LOADED wheel sets → Altoona Shops
+
+  - car: PRR-47823
+    waybill: waybill-9        # LOADED flour → Harrisburg
+
+  - car: PRR-52167
+    waybill: waybill-11       # LOADED lumber → Lewistown Freight
+
+  - car: PRR-61044
+    waybill: waybill-13       # LOADED general merchandise → Lewistown
+
+  - car: RDG-74521
+    waybill: waybill-14       # LOADED grain → Harrisburg
+
+  # Page 2
+  - car: PRR-67890
+    waybill: empty-2          # EMPTY hopper to Burnham
+
+  - car: PRR-155789
+    waybill: empty-3          # EMPTY gondola to quarry
+
+  - car: NYC-158923
+    waybill: empty-6          # EMPTY foreign boxcar east
+
+  - car: PRR-68200
+    waybill: mow-3            # MOW rail → Burnham
+
+  - car: PRR-200156
+    waybill: mow-1            # MOW ballast
+
+  - car: PRR-82341
+    waybill: badorder-1       # BAD ORDER coupler
+
+  - car: B&O-486321
+    waybill: badorder-2       # BAD ORDER hotbox
+
+  - car: PRR-100432
+    waybill: hold-2           # HOLD at Standard Steel
+
+  - car: PRR-75340
+    waybill: deadhead-1       # DEADHEAD combine PGH → ALT

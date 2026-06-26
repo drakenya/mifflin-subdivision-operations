@@ -1,0 +1,41 @@
+# Option cards — same car printed with multiple possible waybills
+# Use this to print choices and pick which one to use in a session
+cards:
+  # PRR-12345 options
+  - car: PRR-12345
+    waybill: waybill-1        # grain → Harrisburg
+
+  - car: PRR-12345
+    waybill: waybill-9        # flour → Harrisburg
+
+  - car: PRR-12345
+    waybill: waybill-11       # lumber inbound → Lewistown
+
+  - car: PRR-12345
+    waybill: empty-1          # EMPTY → Lewistown
+
+  # PRR-100432 (hopper) options
+  - car: PRR-100432
+    waybill: waybill-2        # coal → Standard Steel
+
+  - car: PRR-100432
+    waybill: waybill-4        # limestone → Standard Steel
+
+  - car: PRR-100432
+    waybill: empty-2          # EMPTY to Burnham
+
+  - car: PRR-100432
+    waybill: hold-2           # HOLD at Standard Steel
+
+  # PRR-68200 (gondola) options
+  - car: PRR-68200
+    waybill: waybill-3        # iron ore → Standard Steel
+
+  - car: PRR-68200
+    waybill: waybill-8        # steel → Pittsburgh
+
+  - car: PRR-68200
+    waybill: empty-3          # EMPTY to quarry
+
+  - car: PRR-68200
+    waybill: mow-3            # MOW rail run

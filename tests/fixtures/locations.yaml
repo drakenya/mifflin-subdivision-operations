@@ -1,0 +1,24 @@
+- id: LEW
+  name: Lewistown
+  subdivision: Mifflin
+  industries:
+    - id: LEW-GRAIN
+      name: Lewistown Grain Elevator
+      location_id: LEW
+      track: "1"
+      car_capacity: 3
+      ships:
+        - grain
+      receives: []
+
+- id: ALT
+  name: Altoona
+  subdivision: Middle
+  industries:
+    - id: ALT-SHOP
+      name: Altoona Shops
+      location_id: ALT
+      track: shop
+      car_capacity: 10
+      ships: []
+      receives: []
