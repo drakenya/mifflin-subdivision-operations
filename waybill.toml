@@ -1,5 +1,5 @@
 [defaults]
-layout = "standard_prr"
+layout = "modelling_the_sp"
 data_source = "yaml"
 data_path = "./data"
 output_dir = "./output"

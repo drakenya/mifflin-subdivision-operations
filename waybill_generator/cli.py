@@ -5,10 +5,14 @@ import click
 from waybill_generator.config import load_config
 from waybill_generator.repository.yaml_repo import YamlRepository
 from waybill_generator.layouts.modelling_the_sp import StandardPrrLayout
+from waybill_generator.layouts.experimental_1 import Experimental1Layout
 from waybill_generator.models.waybill import LoadedWaybill
 from waybill_generator.renderer.pdf import render_pdf
 
-_LAYOUTS = {"modelling_the_sp": StandardPrrLayout}
+_LAYOUTS = {
+    "modelling_the_sp": StandardPrrLayout,
+    "experimental_1": Experimental1Layout,
+}
 
 
 @click.group()
