@@ -106,17 +106,22 @@ class Experimental1Layout(BaseLayout):
         rows: list[tuple[str, str | None]],
         x: float, y: float, w: float, h: float,
     ) -> None:
-        """Stack (label, value) pairs as 30pt rows with horizontal rules; skip None values."""
+        """Stack (label, value) pairs as 30pt rows; rules between rows only, not after the last."""
         cursor = y + h
+        visible: list[tuple[float, str, str]] = []
         for label, value in rows:
             if value is None:
                 continue
             if cursor - 30 < y:
                 break
             cursor -= 30
-            self._label(canvas, label, x + 2, cursor + 22)
-            self._value_wrap(canvas, value, x + 2, cursor + 13, max_w=w - 4, size=9, max_lines=2)
-            self._hrule(canvas, x, cursor, w)
+            visible.append((cursor, label, value))
+        last = len(visible) - 1
+        for i, (row_cursor, label, value) in enumerate(visible):
+            self._label(canvas, label, x + 2, row_cursor + 22)
+            self._value_wrap(canvas, value, x + 2, row_cursor + 13, max_w=w - 4, size=9, max_lines=2)
+            if i < last:
+                self._hrule(canvas, x, row_cursor, w)
 
     # -- Origination band -----------------------------------------------------
 
