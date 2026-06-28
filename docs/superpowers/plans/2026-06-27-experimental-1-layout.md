@@ -111,7 +111,7 @@ class Experimental1Layout(BaseLayout):
 In `waybill_generator/cli.py`, add the import and update `_LAYOUTS`:
 
 ```python
-from waybill_generator.layouts.modelling_the_sp import StandardPrrLayout
+from waybill_generator.layouts.modelling_the_sp import ModellingTheSpLayout
 from waybill_generator.layouts.experimental_1 import Experimental1Layout
 ```
 

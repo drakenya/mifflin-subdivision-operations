@@ -1,7 +1,7 @@
 import io
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.lib.pagesizes import letter
-from waybill_generator.layouts.modelling_the_sp import StandardPrrLayout
+from waybill_generator.layouts.modelling_the_sp import ModellingTheSpLayout
 from waybill_generator.models.car import Car
 from waybill_generator.models.railroad import Railroad
 from waybill_generator.models.waybill import (
@@ -92,7 +92,7 @@ def test_experimental1_layout_instantiates():
 
 
 def test_layout_constants():
-    layout = StandardPrrLayout()
+    layout = ModellingTheSpLayout()
     assert layout.card_width_pt == 180.0
     assert layout.card_height_pt == 252.0
     assert layout.origination_height_pt == 35.0
@@ -102,7 +102,7 @@ def test_layout_constants():
 
 
 def test_draw_card_all_waybill_types():
-    layout = StandardPrrLayout()
+    layout = ModellingTheSpLayout()
     for waybill in WAYBILLS:
         buf = io.BytesIO()
         canvas = Canvas(buf, pagesize=letter)

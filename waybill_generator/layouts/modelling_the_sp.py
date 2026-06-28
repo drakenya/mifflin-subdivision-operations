@@ -34,7 +34,7 @@ def _register_typewriter_font() -> None:
         pdfmetrics.registerFont(TTFont(_TYPEWRITER_FONT, str(_FONT_FILE)))
 
 
-class StandardPrrLayout(BaseLayout):
+class ModellingTheSpLayout(BaseLayout):
     value_font: str = _TYPEWRITER_FONT
 
     def __init__(self) -> None:
