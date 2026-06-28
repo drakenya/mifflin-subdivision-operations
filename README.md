@@ -61,6 +61,12 @@ ruff check .        # lint
 
 ```bash
 for session in sessions/test-*.yaml; do
+  waybill --layout experimental_1 generate --session "$session" --output "output/$(basename "$session" .yaml).pdf"
+done
+```
+
+```bash
+for session in sessions/test-*.yaml; do
   waybill generate --session "$session" --output "output/$(basename "$session" .yaml).pdf"
 done
 ```
@@ -68,6 +74,8 @@ done
 # References
 
 ## Modelling the SP
+
+- [Current Waybill](https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEj2v9XKTfo7GVLdy8TJno29u-3Vz7usZklCsokqliOsuWccLnQwsMswoW2jGWSotsjzaO9wOqXCt7xCxltrRXUzW1XIoTDFg5f7Su4_JWzS0Fu7OC1tk7UtX1dXnN5Rss0uRA5KjDocc1h_bDIzMouJcBj_TKqLsxcytIJ49ElKuuqXjXH1GMqim-o1cIc/s600/SP%20example.jpg) (_Source_: [Waybills, Part 131: Model Bill Production](https://modelingthesp.blogspot.com/2026/06/waybills-part-131-model-bill-production.html))
 
 - [Waybill](https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVVnVkvat0nRT-khQaC9LS1FbUfQ9mmxKKYTk6w7winN5X7Kn8G32wd54531eJkffAZKj-u_buT1BUm-9UveU2YU-UdJLEZWAvLTd-eQloY3Ur6O3XLtROicYxip5BAnGS9Lp3TYaQu8E/s1600/oil+bills.jpg)
 - [Empty Car](https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiVVnVkvat0nRT-khQaC9LS1FbUfQ9mmxKKYTk6w7winN5X7Kn8G32wd54531eJkffAZKj-u_buT1BUm-9UveU2YU-UdJLEZWAvLTd-eQloY3Ur6O3XLtROicYxip5BAnGS9Lp3TYaQu8E/s1600/oil+bills.jpg)
