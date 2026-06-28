@@ -23,14 +23,16 @@ class Experimental1Layout(BaseLayout):
     # -- Private drawing helpers ----------------------------------------------
 
     def _label(self, canvas: Canvas, text: str, x: float, y: float) -> None:
-        canvas.setFont("Helvetica-Bold", 3.8)
+        canvas.setFont("Helvetica-Bold", 3.5)
         canvas.setFillColor(black)
         canvas.drawString(x, y, text)
 
+    _VALUE_SIZE = 9
+
     def _value(
-        self, canvas: Canvas, text: str, x: float, y: float, size: int = 9
+        self, canvas: Canvas, text: str, x: float, y: float
     ) -> None:
-        canvas.setFont("Courier-Bold", size)
+        canvas.setFont("Courier-Bold", self._VALUE_SIZE)
         canvas.setFillColor(black)
         canvas.drawString(x, y, text)
 
@@ -41,11 +43,11 @@ class Experimental1Layout(BaseLayout):
         x: float,
         y: float,
         max_w: float,
-        size: int,
         max_lines: int = 1,
         line_gap: int = 2,
     ) -> None:
         from reportlab.pdfbase.pdfmetrics import stringWidth
+        size = self._VALUE_SIZE
         canvas.setFont("Courier-Bold", size)
         canvas.setFillColor(black)
         words = text.split()
@@ -76,9 +78,9 @@ class Experimental1Layout(BaseLayout):
             canvas.drawString(x, y - i * (size + line_gap), line)
 
     def _value_truncate(
-        self, canvas: Canvas, text: str, x: float, y: float, max_w: float, size: int
+        self, canvas: Canvas, text: str, x: float, y: float, max_w: float
     ) -> None:
-        self._value_wrap(canvas, text, x, y, max_w=max_w, size=size, max_lines=1)
+        self._value_wrap(canvas, text, x, y, max_w=max_w, max_lines=1)
 
     def _hrule(self, canvas: Canvas, x: float, y: float, w: float) -> None:
         canvas.setStrokeColor(black)
@@ -119,7 +121,7 @@ class Experimental1Layout(BaseLayout):
         last = len(visible) - 1
         for i, (row_cursor, label, value) in enumerate(visible):
             self._label(canvas, label, x + 2, row_cursor + 22)
-            self._value_wrap(canvas, value, x + 2, row_cursor + 13, max_w=w - 4, size=9, max_lines=2)
+            self._value_wrap(canvas, value, x + 2, row_cursor + 13, max_w=w - 4, max_lines=2)
             if i < last:
                 self._hrule(canvas, x, row_cursor, w)
 
@@ -138,9 +140,6 @@ class Experimental1Layout(BaseLayout):
 
         canvas.setFillColor(black)
 
-        # Form number top-left, waybill id top-right
-        canvas.setFont("Helvetica", 5)
-        canvas.drawString(x, y + h - 6, railroad.form_number)
         # Railroad name centered
         canvas.setFont("Helvetica-Bold", 8)
         canvas.drawCentredString(x + w / 2, y + h / 2 + 2, railroad.name.upper())
@@ -160,8 +159,8 @@ class Experimental1Layout(BaseLayout):
         # Top row: CAR INITIALS & NUMBER (left) | KIND (right)
         self._label(canvas, "CAR INITIALS & NUMBER", x + 2, y + h - 8)
         self._label(canvas, "KIND", mid + 2, y + h - 8)
-        self._value(canvas, f"{car.road} {car.car_number}", x + 2, y + h - 20, size=9)
-        self._value(canvas, car.aar_code, mid + 2, y + h - 20, size=8)
+        self._value(canvas, f"{car.road} {car.car_number}", x + 2, y + h - 20)
+        self._value(canvas, car.aar_code, mid + 2, y + h - 20)
         self._vcol(canvas, mid, y + row_h, row_h)
         self._hrule(canvas, x, y + row_h, w)
 
@@ -220,8 +219,8 @@ class Experimental1Layout(BaseLayout):
         self._label(canvas, "FROM STATION, STATE", mid + 2, cursor + 28)
         to_val = f"{waybill.to_city}, {waybill.to_state}" if waybill.to_city else ""
         from_val = f"{waybill.from_city}, {waybill.from_state}" if waybill.from_city else ""
-        self._value_wrap(canvas, to_val, x + 2, cursor + 17, max_w=col_w, size=10, max_lines=2)
-        self._value_wrap(canvas, from_val, mid + 2, cursor + 17, max_w=col_w, size=10, max_lines=2)
+        self._value_wrap(canvas, to_val, x + 2, cursor + 17, max_w=col_w, max_lines=2)
+        self._value_wrap(canvas, from_val, mid + 2, cursor + 17, max_w=col_w, max_lines=2)
         self._vcol(canvas, mid, cursor, 35)
         self._hrule(canvas, x, cursor, w)
 
@@ -230,9 +229,9 @@ class Experimental1Layout(BaseLayout):
         self._label(canvas, "CONSIGNEE", x + 2, cursor + 21)
         self._label(canvas, "SHIPPER", mid + 2, cursor + 21)
         self._value_wrap(canvas, waybill.consignee_name or "", x + 2, cursor + 12,
-                         max_w=col_w, size=7, max_lines=2)
+                         max_w=col_w, max_lines=2)
         self._value_wrap(canvas, waybill.shipper_name or "", mid + 2, cursor + 12,
-                         max_w=col_w, size=7, max_lines=2)
+                         max_w=col_w, max_lines=2)
         self._vcol(canvas, mid, cursor, 28)
         self._hrule(canvas, x, cursor, w)
 
@@ -241,17 +240,16 @@ class Experimental1Layout(BaseLayout):
         self._label(canvas, "ROUTE — SHOW IN ROUTE ORDER", x + 2, cursor + 13)
         if waybill.routing:
             self._value_truncate(canvas, " - ".join(waybill.routing), x + 2, cursor + 4,
-                                 max_w=w - 4, size=7)
+                                 max_w=w - 4)
         self._hrule(canvas, x, cursor, w)
 
         # DESCRIPTION OF ARTICLES header (10pt)
         cursor -= 10
         self._label(canvas, "DESCRIPTION OF ARTICLES", x + 2, cursor + 4)
-        self._hrule(canvas, x, cursor, w)
 
-        # Commodity — centered in remaining space (~69.5pt)
+        # Commodity — centered in remaining space
         remaining_h = cursor - y
-        canvas.setFont("Courier-Bold", 12)
+        canvas.setFont("Courier-Bold", self._VALUE_SIZE)
         canvas.setFillColor(black)
         canvas.drawCentredString(
             x + w / 2, y + remaining_h / 2 - 2, waybill.commodity_id.upper()
@@ -273,7 +271,7 @@ class Experimental1Layout(BaseLayout):
         self._label(canvas, "Billed from", x + 2, cursor + 4)
         if waybill.home_billed_from:
             self._value_truncate(canvas, waybill.home_billed_from, x + 38, cursor + 4,
-                                 max_w=w - 40, size=7)
+                                 max_w=w - 40)
         self._hrule(canvas, x, cursor, w)
 
         # To or Via / R.R. (10pt, single line each)
@@ -283,10 +281,10 @@ class Experimental1Layout(BaseLayout):
         self._label(canvas, "R.R.", col_rr + 2, cursor + 4)
         if waybill.home_to_or_via:
             self._value_truncate(canvas, waybill.home_to_or_via, x + 30, cursor + 4,
-                                 max_w=col_rr - x - 32, size=7)
+                                 max_w=col_rr - x - 32)
         if waybill.home_rr:
             self._value_truncate(canvas, waybill.home_rr, col_rr + 10, cursor + 4,
-                                 max_w=w - w * 3 / 4 - 12, size=7)
+                                 max_w=w - w * 3 / 4 - 12)
             self._vcol(canvas, col_rr, cursor, 10)
         self._hrule(canvas, x, cursor, w)
 
@@ -298,14 +296,14 @@ class Experimental1Layout(BaseLayout):
         cursor -= 10
         self._label(canvas, "Billed from", x + 2, cursor + 4)
         self._value_truncate(canvas, waybill.from_location_id, x + 38, cursor + 4,
-                             max_w=w - 40, size=7)
+                             max_w=w - 40)
         self._hrule(canvas, x, cursor, w)
 
         # To (10pt, single line)
         cursor -= 10
         self._label(canvas, "To", x + 2, cursor + 4)
         self._value_truncate(canvas, waybill.to_location_id, x + 12, cursor + 4,
-                             max_w=w - 14, size=7)
+                             max_w=w - 14)
         self._hrule(canvas, x, cursor, w)
 
         # Shipper / Spot (remaining ≈ 82.5pt, up to 3 lines each)
@@ -313,8 +311,8 @@ class Experimental1Layout(BaseLayout):
         self._label(canvas, "Spot", mid + 2, cursor - 6)
         if waybill.shipper_ordered_by:
             self._value_wrap(canvas, waybill.shipper_ordered_by, x + 2, cursor - 15,
-                             max_w=w / 2 - 4, size=7, max_lines=3)
+                             max_w=w / 2 - 4, max_lines=3)
         if waybill.spot:
             self._value_wrap(canvas, waybill.spot, mid + 2, cursor - 15,
-                             max_w=w / 2 - 4, size=7, max_lines=3)
+                             max_w=w / 2 - 4, max_lines=3)
         self._vcol(canvas, mid, y, cursor - y)

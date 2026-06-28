@@ -15,6 +15,20 @@ _WHITE = HexColor("#FFFFFF")
 _TYPEWRITER_FONT = "UnderwoodQuietTab"
 _FONT_FILE = Path(__file__).parent.parent / "fonts" / "Underwood Quiet Tab.ttf"
 
+_ARIAL_FONT = "Arial"
+_ARIAL_FILE = Path(__file__).parent.parent / "fonts" / "Arial.ttf"
+
+_AAR_CODES_FILE = Path(__file__).parent.parent.parent / "data" / "aar_codes.yaml"
+
+
+def _load_aar_codes() -> dict[str, str]:
+    import yaml
+    if not _AAR_CODES_FILE.exists():
+        return {}
+    with _AAR_CODES_FILE.open() as f:
+        entries = yaml.safe_load(f) or []
+    return {e["code"]: e["name"] for e in entries}
+
 _BILL_TYPE_LABELS: dict[WaybillType, str] = {
     WaybillType.LOADED: "FREIGHT WAYBILL",
     WaybillType.EMPTY: "EMPTY CAR BILL",
@@ -34,11 +48,24 @@ def _register_typewriter_font() -> None:
         pdfmetrics.registerFont(TTFont(_TYPEWRITER_FONT, str(_FONT_FILE)))
 
 
+def _register_arial_font() -> None:
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    try:
+        pdfmetrics.getFont(_ARIAL_FONT)
+    except KeyError:
+        pdfmetrics.registerFont(TTFont(_ARIAL_FONT, str(_ARIAL_FILE)))
+
+
 class ModellingTheSpLayout(BaseLayout):
     value_font: str = _TYPEWRITER_FONT
+    label_font: str = _ARIAL_FONT
+    origination_height_pt: float = 42.0
 
     def __init__(self) -> None:
         _register_typewriter_font()
+        _register_arial_font()
+        self._aar_codes = _load_aar_codes()
 
     # -- Origination Band -----------------------------------------------------
 
@@ -71,19 +98,21 @@ class ModellingTheSpLayout(BaseLayout):
 
         bill_label = _BILL_TYPE_LABELS[waybill.waybill_type]
 
-        # Form number -- top-left corner
-        canvas.setFont(self.label_font, 5)
-        canvas.setFillColor(black)
-        canvas.drawString(icon_right + 2, y + h - 7, railroad.form_number)
-        canvas.drawRightString(x + w, y + h - 7, railroad.form_number)
+        # Railroad name -- small, centered
+        canvas.setFont(self.label_font, 7)
+        canvas.drawCentredString(x + w / 2, y + h - 15, railroad.name)
 
-        # Railroad name -- centered
-        canvas.setFont(self.label_font, 8)
-        canvas.drawCentredString(x + w / 2, y + h / 2 + 1, railroad.name)
+        # Bill type -- large bold, dominant element
+        canvas.setFont("Times-Bold", 12)
+        canvas.drawCentredString(x + w / 2, y + h - 28, bill_label)
 
-        # Bill type -- centered below railroad name
-        canvas.setFont(self.label_font, 6)
-        canvas.drawCentredString(x + w / 2, y + 4, bill_label)
+        # Subtitle -- small, LOADED waybills only
+        if waybill.waybill_type == WaybillType.LOADED:
+            canvas.setFont(self.label_font, 4)
+            canvas.drawCentredString(
+                x + w / 2, y + 4,
+                "TO BE USED FOR SINGLE CONSIGNMENTS, CARLOAD AND LESS CARLOAD",
+            )
 
     # -- Car Section ----------------------------------------------------------
 
@@ -99,13 +128,13 @@ class ModellingTheSpLayout(BaseLayout):
         canvas.setFillColor(black)
 
         # Row 1: CAR INITIAL | CAR NUMBER
-        canvas.setFont(self.label_font, 5)
+        canvas.setFont(self.label_font, 4.5)
         canvas.drawString(x + 3, y + h - 8, "CAR INITIAL")
         canvas.drawString(mid + 3, y + h - 8, "CAR NUMBER")
 
-        canvas.setFont(self.value_font, 10)
-        canvas.drawString(x + 3, y + h - 20, car.road)
-        canvas.drawString(mid + 3, y + h - 20, car.car_number)
+        half_w = w / 2 - 6
+        self._value_fit(canvas, car.road, x + 3, y + h - 20, half_w)
+        self._value_fit(canvas, car.car_number, mid + 3, y + h - 20, half_w)
 
         canvas.setStrokeColor(black)
         canvas.setLineWidth(0.4)
@@ -115,20 +144,29 @@ class ModellingTheSpLayout(BaseLayout):
         canvas.setLineWidth(0.5)
         canvas.line(x, y + h - 24, x + w, y + h - 24)
 
-        # Row 2: AAR CLASS | CAPACITY
-        canvas.setFont(self.label_font, 5)
-        canvas.drawString(x + 3, y + h - 31, "AAR CLASS")
-        canvas.drawString(mid + 3, y + h - 31, "CAPACITY")
+        # Row 2: AAR CLASS OF CAR ORDERED | LENGTH/CAPY OF CAR ORDERED
+        canvas.setFont(self.label_font, 4.5)
+        canvas.drawString(x + 3, y + h - 29, "AAR CLASS OF")
+        canvas.drawString(x + 3, y + h - 35, "CAR ORDERED")
+        canvas.drawString(mid + 3, y + h - 29, "LENGTH/CAPY OF")
+        canvas.drawString(mid + 3, y + h - 35, "CAR ORDERED")
 
-        cap = f"{car.capacity_tons}T"
+        length_cap = f"{car.length_ft}'" if car.length_ft else ""
+        if length_cap:
+            length_cap += f"  {car.capacity_tons}T"
+        else:
+            length_cap = f"{car.capacity_tons}T"
         if car.capacity_cuft:
-            cap += f"  {car.capacity_cuft} CF"
-        canvas.setFont(self.value_font, 8)
-        canvas.drawString(x + 3, y + h - 42, car.aar_code)
-        canvas.drawString(mid + 3, y + h - 42, cap)
+            length_cap += f"  {car.capacity_cuft} CF"
+        aar_display = car.aar_code.upper()
+        aar_name = self._aar_codes.get(car.aar_code)
+        if aar_name:
+            aar_display += f" {aar_name.upper()}"
+        self._value_fit(canvas, aar_display, x + 3, y + h - 44, half_w)
+        self._value_fit(canvas, length_cap, mid + 3, y + h - 44, half_w)
 
         canvas.setLineWidth(0.4)
-        canvas.line(mid, y + h - 29, mid, y + h - 44)
+        canvas.line(mid, y + h - 25, mid, y + h - 46)
 
     # -- Waybill Section ------------------------------------------------------
 
@@ -168,43 +206,43 @@ class ModellingTheSpLayout(BaseLayout):
         canvas.line(x, y, x, y + h)
 
     def _label(self, canvas: Canvas, text: str, x: float, y: float) -> None:
-        canvas.setFont(self.label_font, 5)
+        canvas.setFont(self.label_font, 4.5)
         canvas.setFillColor(black)
         canvas.drawString(x, y, text)
 
-    def _value(self, canvas: Canvas, text: str, x: float, y: float, size: int = 9) -> None:
+    def _value(self, canvas: Canvas, text: str, x: float, y: float, size: int = 8) -> None:
         canvas.setFont(self.value_font, size)
         canvas.setFillColor(black)
-        canvas.drawString(x, y, text)
+        canvas.drawString(x, y, text.upper())
 
     def _value_fit(
-        self, canvas: Canvas, text: str, x: float, y: float, max_width: float, max_size: int = 7
+        self, canvas: Canvas, text: str, x: float, y: float, max_width: float, max_size: int = 8
     ) -> None:
-        """Draw value font text, shrinking then truncating to stay within max_width."""
+        """Draw value font text at max_size, truncating with ellipsis if too wide."""
         from reportlab.pdfbase.pdfmetrics import stringWidth
-        for size in range(max_size, 3, -1):
-            if stringWidth(text, self.value_font, size) <= max_width:
-                canvas.setFont(self.value_font, size)
-                canvas.setFillColor(black)
-                canvas.drawString(x, y, text)
-                return
-        size = 4
+        text = text.upper()
+        if stringWidth(text, self.value_font, max_size) <= max_width:
+            canvas.setFont(self.value_font, max_size)
+            canvas.setFillColor(black)
+            canvas.drawString(x, y, text)
+            return
         truncated = text
-        while truncated and stringWidth(truncated + "…", self.value_font, size) > max_width:
+        while truncated and stringWidth(truncated + "…", self.value_font, max_size) > max_width:
             truncated = truncated[:-1]
-        canvas.setFont(self.value_font, size)
+        canvas.setFont(self.value_font, max_size)
         canvas.setFillColor(black)
         canvas.drawString(x, y, truncated + ("…" if truncated != text else ""))
 
     def _value_wrap(
         self, canvas: Canvas, text: str, x: float, y: float, max_width: float,
-        size: int = 9, line_gap: int = 2,
+        size: int = 8, line_gap: int = 2,
     ) -> None:
-        """Draw value font text, wrapping to a second line at the nearest word boundary."""
+        """Wrap to a second line at the nearest word boundary; truncate line 2 with ellipsis if needed."""
         from reportlab.pdfbase.pdfmetrics import stringWidth
+        text = text.upper()
         canvas.setFillColor(black)
+        canvas.setFont(self.value_font, size)
         if stringWidth(text, self.value_font, size) <= max_width:
-            canvas.setFont(self.value_font, size)
             canvas.drawString(x, y, text)
             return
         words = text.split()
@@ -220,10 +258,11 @@ class ModellingTheSpLayout(BaseLayout):
             line1 = words[0]
             split_at = 1
         line2 = " ".join(words[split_at:])
-        canvas.setFont(self.value_font, size)
         canvas.drawString(x, y, line1)
         if line2:
-            canvas.drawString(x, y - size - line_gap, line2)
+            while line2 and stringWidth(line2 + "…", self.value_font, size) > max_width:
+                line2 = line2[:-1]
+            canvas.drawString(x, y - size - line_gap, line2 + ("…" if " ".join(words[split_at:]) != line2 else ""))
 
     def _section_header(self, canvas: Canvas, text: str, x: float, y: float, w: float) -> None:
         """Bold centered section header with double rules above and below."""
@@ -239,7 +278,6 @@ class ModellingTheSpLayout(BaseLayout):
         self, canvas: Canvas, w: LoadedWaybill, x: float, y: float, ww: float, h: float
     ) -> None:
         mid = x + ww / 2
-        col3 = x + ww * 2 / 3
         cursor = y + h
 
         # TO STATION, STATE | FROM STATION, STATE — large, most prominent row (2-line capable)
@@ -250,61 +288,61 @@ class ModellingTheSpLayout(BaseLayout):
         self._label(canvas, "TO STATION, STATE", x + 2, cursor - 5)
         self._label(canvas, "FROM STATION, STATE", mid + 2, cursor - 5)
         cursor -= 7
-        self._value_wrap(canvas, to_val, x + 2, cursor - 10, col_w, size=10, line_gap=2)
-        self._value_wrap(canvas, from_val, mid + 2, cursor - 10, col_w, size=10, line_gap=2)
-        self._vcol(canvas, mid, cursor - 24, 30)
-        cursor -= 26
+        self._value_wrap(canvas, to_val, x + 2, cursor - 10, col_w, line_gap=2)
+        self._value_wrap(canvas, from_val, mid + 2, cursor - 10, col_w, line_gap=2)
+        self._vcol(canvas, mid, cursor - 22, 28)
+        cursor -= 24
         self._rule(canvas, x, cursor, ww)
 
-        # CONSIGNEE AND ADDRESS | SHIPPER (2-line capable)
+        # CONSIGNEE AND ADDRESS | SHIPPER (2-line, second line truncates)
         consignee_val = w.consignee_name or w.consignee_id
         shipper_val = w.shipper_name or w.shipper_id
         cursor -= 3
         self._label(canvas, "CONSIGNEE AND ADDRESS", x + 2, cursor - 5)
         self._label(canvas, "SHIPPER", mid + 2, cursor - 5)
         cursor -= 7
-        self._value_wrap(canvas, consignee_val, x + 2, cursor - 9, col_w, size=7, line_gap=2)
-        self._value_wrap(canvas, shipper_val, mid + 2, cursor - 9, col_w, size=7, line_gap=2)
-        self._vcol(canvas, mid, cursor - 20, 25)
+        self._value_wrap(canvas, consignee_val, x + 2, cursor - 9, col_w)
+        self._value_wrap(canvas, shipper_val, mid + 2, cursor - 9, col_w)
+        self._vcol(canvas, mid, cursor - 22, 26)
         cursor -= 22
         self._rule(canvas, x, cursor, ww)
 
         # ROUTE | STOP THIS CAR AT
         cursor -= 3
-        self._label(canvas, "ROUTE — SHOW IN ROUTE ORDER", x + 2, cursor - 5)
-        self._label(canvas, "STOP THIS CAR AT", col3 + 2, cursor - 5)
+        self._label(canvas, "ROUTE Show in route order", x + 2, cursor - 5)
+        self._label(canvas, "STOP THIS CAR AT", mid + 2, cursor - 5)
         cursor -= 7
         if w.routing:
-            self._value(canvas, " - ".join(w.routing), x + 2, cursor - 8, size=7)
+            self._value_fit(canvas, " - ".join(w.routing), x + 2, cursor - 8, ww / 2 - 4)
         if w.stop_at:
-            self._value_fit(canvas, w.stop_at, col3 + 2, cursor - 8, ww - (col3 - x) - 4, max_size=7)
-        self._vcol(canvas, col3, cursor - 11, 18)
+            self._value_fit(canvas, w.stop_at, mid + 2, cursor - 8, ww / 2 - 4)
+        self._vcol(canvas, mid, cursor - 11, 18)
         cursor -= 12
         self._rule(canvas, x, cursor, ww)
 
-        # LCL TRAFFIC INSTRUCTIONS
+        # ON C.L. TRAFFIC INSTRUCTIONS
         cursor -= 3
-        self._label(canvas, "LCL TRAFFIC INSTRUCTIONS", x + 2, cursor - 5)
+        canvas.setFont(self.label_font, 4.5)
+        canvas.setFillColor(black)
+        canvas.drawString(x + 2, cursor - 5, "ON C.L. TRAFFIC INSTRUCTIONS (Regarding Icing, Ventilation, Etc.)")
+        canvas.drawString(x + 2, cursor - 11, "& EXCEPTIONS")
+        cursor -= 6
         cursor -= 7
         if w.notes:
-            canvas.setFont("Times-Roman", 6)
-            canvas.setFillColor(black)
-            canvas.drawString(x + 2, cursor - 7, w.notes[:55])
+            self._value_fit(canvas, w.notes, x + 2, cursor - 7, ww - 4)
+
         cursor -= 11
         self._rule(canvas, x, cursor, ww)
 
         # NO. PKGS. | DESCRIPTION OF ARTICLES column headers
-        pkgs_col = x + 22
+        pkgs_col = x + 32
         cursor -= 2
         self._label(canvas, "NO. PKGS.", x + 2, cursor - 5)
         self._label(canvas, "DESCRIPTION OF ARTICLES", pkgs_col + 3, cursor - 5)
-        cursor -= 6
-        self._vcol(canvas, pkgs_col, cursor, 8)
-        self._rule(canvas, x, cursor, ww)
+        cursor -= 8
 
         # Commodity
-        cursor -= 4
-        self._value(canvas, w.commodity_id.upper(), pkgs_col + 3, cursor - 9, size=8)
+        self._value_fit(canvas, w.commodity_id, pkgs_col + 3, cursor - 9, x + ww - pkgs_col - 5)
 
     def _draw_empty(
         self, canvas: Canvas, w: EmptyWaybill, x: float, y: float, ww: float, h: float
@@ -319,7 +357,7 @@ class ModellingTheSpLayout(BaseLayout):
 
         self._label(canvas, "Billed from", x + 2, cursor - 6)
         if w.home_billed_from:
-            self._value(canvas, w.home_billed_from, x + 33, cursor - 7, size=7)
+            self._value_fit(canvas, w.home_billed_from, x + 33, cursor - 7, ww - 35)
         cursor -= 10
         self._rule(canvas, x, cursor, ww)
         cursor -= 10
@@ -327,11 +365,11 @@ class ModellingTheSpLayout(BaseLayout):
         col_rr = x + ww * 3 / 4
         self._label(canvas, "To or Via", x + 2, cursor - 6)
         self._label(canvas, "R.R.", col_rr + 2, cursor - 6)
+        self._vcol(canvas, col_rr, cursor - 9, 11)
         if w.home_to_or_via:
-            self._value_fit(canvas, w.home_to_or_via, x + 28, cursor - 7, col_rr - x - 30, max_size=7)
+            self._value_fit(canvas, w.home_to_or_via, x + 28, cursor - 7, col_rr - x - 30)
         if w.home_rr:
-            self._value(canvas, w.home_rr, col_rr + 2, cursor - 7, size=7)
-            self._vcol(canvas, col_rr, cursor - 9, 11)
+            self._value_fit(canvas, w.home_rr, col_rr + 2, cursor - 7, ww / 4 - 4)
         cursor -= 10
         self._rule(canvas, x, cursor, ww)
         cursor -= 8
@@ -342,33 +380,36 @@ class ModellingTheSpLayout(BaseLayout):
         cursor -= 3
 
         self._label(canvas, "Billed from", x + 2, cursor - 6)
-        self._value(canvas, w.from_location_id, x + 30, cursor - 7, size=9)
+        self._value_fit(canvas, w.from_location_id, x + 30, cursor - 7, ww - 32)
         cursor -= 10
         self._rule(canvas, x, cursor, ww)
         cursor -= 8
 
         self._label(canvas, "To", x + 2, cursor - 6)
-        self._value(canvas, w.to_location_id, x + 10, cursor - 7, size=9)
+        self._value_fit(canvas, w.to_location_id, x + 10, cursor - 7, ww - 12)
         cursor -= 10
         self._rule(canvas, x, cursor, ww)
-        cursor -= 8
+        cursor -= 4
 
-        self._label(canvas, "Shipper", x + 2, cursor - 6)
-        self._label(canvas, "Spot", mid + 2, cursor - 6)
-        if w.shipper_ordered_by or w.spot:
-            self._value(canvas, w.shipper_ordered_by or "", x + 2, cursor - 14, size=7)
-            self._value(canvas, w.spot or "", mid + 2, cursor - 14, size=7)
-        cursor -= 14
-        self._vcol(canvas, mid, cursor, 16)
+        self._label(canvas, "Shipper", x + 2, cursor - 5)
+        self._label(canvas, "Spot", mid + 2, cursor - 5)
+        if w.shipper_ordered_by:
+            self._value_fit(canvas, w.shipper_ordered_by, x + 2, cursor - 13, mid - x - 4)
+        if w.spot:
+            self._value_fit(canvas, w.spot, mid + 2, cursor - 13, x + ww - mid - 4)
+        cursor -= 16
+        self._vcol(canvas, mid, cursor, 17)
         self._rule(canvas, x, cursor, ww)
 
         # Instructions
-        canvas.setFont(self.label_font, 4)
+        canvas.setFont(self.label_font, 4.5)
         canvas.setFillColor(black)
-        canvas.drawString(x + 2, y + 20,
+        canvas.drawString(x + 2, y + 26,
             "INSTRUCTIONS – This form must accompany all empty foreign cars,")
+        canvas.drawString(x + 2, y + 20,
+            "and System empty cars intended for loading, and must be used in")
         canvas.drawString(x + 2, y + 14,
-            "and System empty cars intended for loading, per General Order Ten.")
+            "billing private line cars under General Order Ten.")
 
     def _draw_deadhead(
         self, canvas: Canvas, w: DeadheadWaybill, x: float, y: float, ww: float, h: float
@@ -377,14 +418,14 @@ class ModellingTheSpLayout(BaseLayout):
 
         self._label(canvas, "FROM", x + 2, cursor - 6)
         cursor -= 8
-        self._value(canvas, w.from_location_id, x + 2, cursor - 10)
+        self._value_fit(canvas, w.from_location_id, x + 2, cursor - 10, ww - 4)
         cursor -= 14
         self._rule(canvas, x, cursor, ww)
 
         cursor -= 2
         self._label(canvas, "TO", x + 2, cursor - 6)
         cursor -= 8
-        self._value(canvas, w.to_location_id, x + 2, cursor - 10)
+        self._value_fit(canvas, w.to_location_id, x + 2, cursor - 10, ww - 4)
         cursor -= 14
         self._rule(canvas, x, cursor, ww)
 
@@ -392,7 +433,7 @@ class ModellingTheSpLayout(BaseLayout):
             cursor -= 2
             self._label(canvas, "CONSIST", x + 2, cursor - 6)
             cursor -= 8
-            self._value_wrap(canvas, w.consist_note, x + 2, cursor - 9, ww - 4, size=7, line_gap=2)
+            self._value_wrap(canvas, w.consist_note, x + 2, cursor - 9, ww - 4, line_gap=2)
 
     def _draw_mow(
         self, canvas: Canvas, w: MoWWaybill, x: float, y: float, ww: float, h: float
@@ -401,21 +442,21 @@ class ModellingTheSpLayout(BaseLayout):
 
         self._label(canvas, "MATERIAL", x + 2, cursor - 6)
         cursor -= 8
-        self._value_fit(canvas, w.commodity_desc, x + 2, cursor - 10, ww - 4, max_size=9)
+        self._value_fit(canvas, w.commodity_desc, x + 2, cursor - 10, ww - 4)
         cursor -= 14
         self._rule(canvas, x, cursor, ww)
 
         cursor -= 2
         self._label(canvas, "FROM", x + 2, cursor - 6)
         cursor -= 8
-        self._value(canvas, w.from_location_id, x + 2, cursor - 10)
+        self._value_fit(canvas, w.from_location_id, x + 2, cursor - 10, ww - 4)
         cursor -= 14
         self._rule(canvas, x, cursor, ww)
 
         cursor -= 2
         self._label(canvas, "TO", x + 2, cursor - 6)
         cursor -= 8
-        self._value(canvas, w.to_location_id, x + 2, cursor - 10)
+        self._value_fit(canvas, w.to_location_id, x + 2, cursor - 10, ww - 4)
         cursor -= 14
         self._rule(canvas, x, cursor, ww)
 
@@ -423,7 +464,7 @@ class ModellingTheSpLayout(BaseLayout):
             cursor -= 2
             self._label(canvas, "PROJECT", x + 2, cursor - 6)
             cursor -= 8
-            self._value_wrap(canvas, w.project, x + 2, cursor - 9, ww - 4, size=6, line_gap=2)
+            self._value_wrap(canvas, w.project, x + 2, cursor - 9, ww - 4, line_gap=2)
 
     def _draw_hold(
         self, canvas: Canvas, w: HoldWaybill, x: float, y: float, ww: float, h: float
@@ -432,14 +473,14 @@ class ModellingTheSpLayout(BaseLayout):
 
         self._label(canvas, "HOLD AT", x + 2, cursor - 6)
         cursor -= 8
-        self._value(canvas, w.industry_id, x + 2, cursor - 10)
+        self._value_fit(canvas, w.industry_id, x + 2, cursor - 10, ww - 4)
         cursor -= 14
         self._rule(canvas, x, cursor, ww)
 
         cursor -= 2
         self._label(canvas, "WAITING FOR", x + 2, cursor - 6)
         cursor -= 8
-        self._value_wrap(canvas, w.waiting_for, x + 2, cursor - 9, ww - 4, size=7, line_gap=2)
+        self._value_wrap(canvas, w.waiting_for, x + 2, cursor - 9, ww - 4, line_gap=2)
 
     def _draw_bad_order(
         self, canvas: Canvas, w: BadOrderWaybill, x: float, y: float, ww: float, h: float
@@ -448,14 +489,14 @@ class ModellingTheSpLayout(BaseLayout):
 
         self._label(canvas, "FROM", x + 2, cursor - 6)
         cursor -= 8
-        self._value(canvas, w.from_location_id, x + 2, cursor - 10)
+        self._value_fit(canvas, w.from_location_id, x + 2, cursor - 10, ww - 4)
         cursor -= 14
         self._rule(canvas, x, cursor, ww)
 
         cursor -= 2
         self._label(canvas, "REPAIR SHOP", x + 2, cursor - 6)
         cursor -= 8
-        self._value(canvas, w.shop_location_id, x + 2, cursor - 10)
+        self._value_fit(canvas, w.shop_location_id, x + 2, cursor - 10, ww - 4)
         cursor -= 14
         self._rule(canvas, x, cursor, ww)
 
@@ -463,4 +504,4 @@ class ModellingTheSpLayout(BaseLayout):
             cursor -= 2
             self._label(canvas, "DEFECT", x + 2, cursor - 6)
             cursor -= 8
-            self._value_wrap(canvas, w.defect, x + 2, cursor - 9, ww - 4, size=7, line_gap=2)
+            self._value_wrap(canvas, w.defect, x + 2, cursor - 9, ww - 4, line_gap=2)

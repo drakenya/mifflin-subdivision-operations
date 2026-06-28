@@ -1,0 +1,41 @@
+# AAR standard car type codes and human-readable names
+# Source: AAR Interchange Rules
+
+- code: XM
+  name: Box Car
+- code: XF
+  name: Box Car (Auto Parts)
+- code: XL
+  name: Box Car (Insulated)
+- code: XP
+  name: Box Car (Equipped)
+- code: HM
+  name: Open Hopper
+- code: HT
+  name: Open Hopper (Covered)
+- code: LO
+  name: Covered Hopper
+- code: LB
+  name: Covered Hopper (Grain)
+- code: LC
+  name: Covered Hopper (Cement)
+- code: GB
+  name: Gondola
+- code: GS
+  name: Gondola (Steel)
+- code: FM
+  name: Flat Car
+- code: FC
+  name: Flat Car (Coil Steel)
+- code: FD
+  name: Flat Car (Depressed Center)
+- code: FA
+  name: Flat Car (Auto Rack)
+- code: TM
+  name: Tank Car
+- code: TP
+  name: Tank Car (Pressurized)
+- code: RB
+  name: Refrigerator Car
+- code: RS
+  name: Stock Car
