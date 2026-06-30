@@ -135,9 +135,10 @@ waybill add-industry CATALOG_ID [--preview]
 **Workflow:**
 
 1. Load and display the catalog entry in full.
-2. Check `locations.yaml` for an existing location matching city + state + railroad:
-   - **Match found:** offer to add the industry to that location.
-   - **No match:** propose a new `Location` entry containing the industry.
+2. Check `locations.yaml` for existing locations matching city + state + railroad_id:
+   - **One match:** offer to add the industry to that location.
+   - **Multiple matches:** list matching location ids and prompt the user to pick one.
+   - **No match:** propose a new `Location` entry (auto-generate an id from city initials) containing the industry.
 3. Display a preview of the exact YAML block that would be written.
 4. Prompt:
    - **Y** — write to `locations.yaml`
