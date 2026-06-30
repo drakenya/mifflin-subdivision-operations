@@ -15,5 +15,6 @@ class Location(BaseModel):
     id: str
     name: str
     state: str = "PA"
-    subdivision: str | None = None
+    railroad_id: str | None = None
+    on_layout: bool = False
     industries: list[Industry] = []

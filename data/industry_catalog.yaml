@@ -1,0 +1,46 @@
+- id: cat-001
+  name: Clearfield Coal & Coke Co.
+  city: Clearfield
+  state: PA
+  railroad_id: PRR
+  source: opsig
+  source_file: coal-mines-pa.csv
+  source_ref: "OPSIG-4872"
+  ships:
+    - coal
+  receives: []
+  car_types:
+    - HM
+    - HT
+  notes: Bituminous coal, Clearfield County
+
+- id: cat-002
+  name: Sunbury Lumber Co.
+  city: Sunbury
+  state: PA
+  railroad_id: PRR
+  source: jbritton
+  source_file: model-railroad-waybills-prr-industry-data
+  ships:
+    - lumber
+  receives: []
+  car_types:
+    - FM
+    - FL
+
+- id: cat-003
+  name: Baldwin Locomotive Works
+  city: Eddystone
+  state: PA
+  railroad_id: PRR
+  source: manual
+  source_file: manual
+  ships:
+    - machinery
+  receives:
+    - steel
+    - coal
+  car_types:
+    - FM
+    - XM
+  notes: Major locomotive builder, PRR connection

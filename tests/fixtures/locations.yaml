@@ -1,6 +1,6 @@
 - id: LEW
   name: Lewistown
-  subdivision: Mifflin
+  on_layout: true
   industries:
     - id: LEW-GRAIN
       name: Lewistown Grain Elevator
@@ -13,7 +13,6 @@
 
 - id: ALT
   name: Altoona
-  subdivision: Middle
   industries:
     - id: ALT-SHOP
       name: Altoona Shops

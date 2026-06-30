@@ -30,21 +30,24 @@ class TestCar:
 class TestLocation:
     def test_location_with_industries(self):
         loc = Location(
-            id="LEW", name="Lewistown", subdivision="Mifflin",
+            id="LEW", name="Lewistown", on_layout=True,
             industries=[
-                Industry(
-                    id="LEW-GRAIN", name="Grain Elevator", location_id="LEW",
-                    ships=["grain"],
-                )
+                Industry(id="LEW-GRAIN", name="Grain Elevator", location_id="LEW", ships=["grain"])
             ],
         )
         assert len(loc.industries) == 1
         assert loc.industries[0].ships == ["grain"]
+        assert loc.on_layout is True
 
     def test_location_defaults(self):
         loc = Location(id="ALT", name="Altoona")
         assert loc.industries == []
-        assert loc.subdivision is None
+        assert loc.railroad_id is None
+        assert loc.on_layout is False
+
+    def test_foreign_railroad(self):
+        loc = Location(id="NYC-TERM", name="New York Terminal", railroad_id="NYC")
+        assert loc.railroad_id == "NYC"
 
 
 class TestCommodity:
