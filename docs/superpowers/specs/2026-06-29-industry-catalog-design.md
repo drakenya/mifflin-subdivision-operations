@@ -175,6 +175,16 @@ tests/
 
 ---
 
+## Future: Mass Import from OpSIG / JBritton
+
+> **Stub — separate sub-project.** The catalog is designed to support bulk population, but the import tooling is out of scope for this spec.
+
+Planned: an `import` command (or standalone script) that reads a source file from OpSIG or JBritton, maps fields to `CatalogIndustry`, normalizes commodity names and car types against the project's commodity/AAR lists, deduplicates against existing catalog entries, and appends new records to `industry_catalog.yaml` with a review step before writing.
+
+Source format, normalization rules, and deduplication strategy will be designed once the source file structures are known.
+
+---
+
 ## Key Design Decisions
 
 - **Catalog is read-only reference data** — `CatalogRepository` is separate from `BaseRepository` and never participates in waybill generation. No risk of catalog entries appearing on cards.
