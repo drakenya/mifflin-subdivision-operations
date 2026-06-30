@@ -1,0 +1,10 @@
+# Map source-file commodity text to project commodity ids.
+# Lookup is case-insensitive exact match on source_text.
+# Set commodity_id to null to mark as intentionally unmapped
+# (stays as free-text and is suppressed from the unmatched report).
+#
+# Example:
+# - source_text: "Petroleum Products"
+#   commodity_id: null
+# - source_text: "Specialty Steel"
+#   commodity_id: steel

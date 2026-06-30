@@ -1,0 +1,10 @@
+# OpSIG shorthand car type codes → AAR codes
+# Pre-populated based on observed OpSIG data.
+# Add new mappings as unknown codes appear in import reports.
+# CB mapping is uncertain — update if source documentation clarifies.
+T: TM    # Tank Car
+H: HM    # Open Hopper
+CH: LO   # Covered Hopper
+B: XM    # Box Car
+G: GB    # Gondola
+CB: XM   # Covered/Combination Box (uncertain — verify against OpSIG docs)
