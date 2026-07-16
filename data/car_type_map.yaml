@@ -1,0 +1,7 @@
+# Map roster spreadsheet "Type" free-text to AAR codes.
+# Lookup is case-insensitive exact match on source_text.
+# Add entries here as unmapped types appear in `waybill import-roster` reports.
+#
+# Example:
+# - source_text: "Bev-Bel Special Run Box Car"
+#   aar_code: XM

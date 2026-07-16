@@ -433,3 +433,59 @@ def import_catalog(ctx, filepath, source, industry_db):
         click.echo()
         unknown = ", ".join(report.unknown_car_codes)
         click.echo(f"Unknown OpSIG car codes (not in opsig_car_map.yaml): {unknown}")
+
+
+@main.command("import-roster")
+@click.option("--source", required=True, type=click.Path(exists=True),
+              help="Path to the roster .xlsx file (e.g. a OneDrive-synced spreadsheet)")
+@click.pass_context
+def import_roster(ctx, source):
+    """Import the Freight Cars sheet from a roster spreadsheet into cars.yaml."""
+    from waybill_generator.importers.roster_xlsx import (
+        read_freight_cars, load_car_type_map, build_cars,
+    )
+
+    data_path = Path(ctx.obj["data_path"])
+    car_type_map_path = data_path / "car_type_map.yaml"
+
+    rows = read_freight_cars(Path(source))
+    car_type_map = load_car_type_map(car_type_map_path)
+    cars, report = build_cars(rows, car_type_map)
+
+    cars_path = data_path / "cars.yaml"
+    cars_path.write_text(
+        yaml.dump(
+            [c.model_dump(exclude_none=True) for c in cars],
+            default_flow_style=False,
+            allow_unicode=True,
+        )
+    )
+
+    click.echo(f"\nImporting roster: {Path(source).name}  [Freight Cars]")
+    click.echo(f"  Rows read:             {report.rows_read}")
+    click.echo(f"  Skipped (sold):        {report.skipped_sold}")
+    click.echo(f"  Skipped (incomplete):  {report.skipped_incomplete}")
+    click.echo(f"  Imported:              {report.imported}")
+    click.echo(f"  Duplicate ids:         {len(report.duplicate_ids)}")
+    click.echo()
+    click.echo("AAR code resolution:")
+    click.echo(f"  map-matched:      {report.map_matched}")
+    click.echo(f"  keyword-matched:  {report.keyword_matched}")
+    click.echo(f"  fallback (XM):    {report.fallback_matched}")
+    click.echo()
+    click.echo("Capacity resolution:")
+    click.echo(f"  regex-extracted:  {report.capacity_regex}")
+    click.echo(f"  default table:    {report.capacity_default}")
+
+    if report.duplicate_ids:
+        click.echo()
+        click.echo("Duplicate ids (last row wins):")
+        for id_ in report.duplicate_ids:
+            click.echo(f"  {id_}")
+
+    if report.unmapped_types:
+        click.echo()
+        click.echo("Unmapped types (add to car_type_map.yaml to resolve):")
+        for type_text, count in sorted(report.unmapped_types.items(), key=lambda x: -x[1]):
+            noun = "car" if count == 1 else "cars"
+            click.echo(f"  {type_text!r:<50} {count} {noun}")
