@@ -18,8 +18,19 @@ _WHITE = HexColor("#FFFFFF")
 _TYPEWRITER_FONT = "OCR-B"
 _FONT_FILE = Path(__file__).parent.parent / "fonts" / "OCR-B.ttf"
 
-_ARIAL_FONT = "Arial"
-_ARIAL_FILE = Path(__file__).parent.parent / "fonts" / "Arial.ttf"
+# Other label-font candidates tried and kept in fonts/ for comparison:
+# Arial.ttf (original), League Gothic.ttf (ruled out -- too hard to read),
+# Oswald.ttf, Fjalla One.ttf. Revisit if News Cycle doesn't hold up.
+_LABEL_FONT = "NewsCycle"
+_LABEL_FONT_FILE = Path(__file__).parent.parent / "fonts" / "News Cycle.ttf"
+
+_RAILROAD_NAME_FONT = "PTSans"
+_RAILROAD_NAME_FONT_FILE = Path(__file__).parent.parent / "fonts" / "PT Sans.ttf"
+
+# Other headline-font candidates tried and kept in fonts/ for comparison:
+# Old Standard TT Bold.ttf. Revisit if Arvo doesn't hold up.
+_HEADLINE_FONT = "Arvo-Bold"
+_HEADLINE_FONT_FILE = Path(__file__).parent.parent / "fonts" / "Arvo Bold.ttf"
 
 _AAR_CODES_FILE = Path(__file__).parent.parent.parent / "data" / "aar_codes.yaml"
 
@@ -51,23 +62,45 @@ def _register_typewriter_font() -> None:
         pdfmetrics.registerFont(TTFont(_TYPEWRITER_FONT, str(_FONT_FILE)))
 
 
-def _register_arial_font() -> None:
+def _register_label_font() -> None:
     from reportlab.pdfbase import pdfmetrics
     from reportlab.pdfbase.ttfonts import TTFont
     try:
-        pdfmetrics.getFont(_ARIAL_FONT)
+        pdfmetrics.getFont(_LABEL_FONT)
     except KeyError:
-        pdfmetrics.registerFont(TTFont(_ARIAL_FONT, str(_ARIAL_FILE)))
+        pdfmetrics.registerFont(TTFont(_LABEL_FONT, str(_LABEL_FONT_FILE)))
+
+
+def _register_railroad_name_font() -> None:
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    try:
+        pdfmetrics.getFont(_RAILROAD_NAME_FONT)
+    except KeyError:
+        pdfmetrics.registerFont(TTFont(_RAILROAD_NAME_FONT, str(_RAILROAD_NAME_FONT_FILE)))
+
+
+def _register_headline_font() -> None:
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    try:
+        pdfmetrics.getFont(_HEADLINE_FONT)
+    except KeyError:
+        pdfmetrics.registerFont(TTFont(_HEADLINE_FONT, str(_HEADLINE_FONT_FILE)))
 
 
 class ModellingTheSpLayout(BaseLayout):
     value_font: str = _TYPEWRITER_FONT
-    label_font: str = _ARIAL_FONT
+    label_font: str = _LABEL_FONT
+    railroad_name_font: str = _RAILROAD_NAME_FONT
+    headline_font: str = _HEADLINE_FONT
     origination_height_pt: float = 42.0
 
     def __init__(self) -> None:
         _register_typewriter_font()
-        _register_arial_font()
+        _register_label_font()
+        _register_railroad_name_font()
+        _register_headline_font()
         self._aar_codes = _load_aar_codes()
 
     # -- Origination Band -----------------------------------------------------
@@ -102,11 +135,11 @@ class ModellingTheSpLayout(BaseLayout):
         bill_label = _BILL_TYPE_LABELS[waybill.waybill_type]
 
         # Railroad name -- small, centered
-        canvas.setFont(self.label_font, 7)
+        canvas.setFont(self.railroad_name_font, 7)
         canvas.drawCentredString(x + w / 2, y + h - 15, railroad.name)
 
         # Bill type -- large bold, dominant element
-        canvas.setFont("Times-Bold", 12)
+        canvas.setFont(self.headline_font, 12)
         canvas.drawCentredString(x + w / 2, y + h - 28, bill_label)
 
         # Subtitle -- small, LOADED waybills only
@@ -269,7 +302,7 @@ class ModellingTheSpLayout(BaseLayout):
 
     def _section_header(self, canvas: Canvas, text: str, x: float, y: float, w: float) -> None:
         """Bold centered section header with double rules above and below."""
-        canvas.setFont("Times-Bold", 9)
+        canvas.setFont(self.headline_font, 9)
         canvas.setFillColor(black)
         canvas.drawCentredString(x + w / 2, y + 3, text)
         self._rule(canvas, x, y + 14, w)
