@@ -78,6 +78,19 @@ for session in sessions/test-*.yaml; do
 done
 ```
 
+### Compare layouts side by side
+
+Generate every session through every layout to compare them directly:
+
+```bash
+for session in sessions/test-*.yaml; do
+  name=$(basename "$session" .yaml)
+  for layout in modelling_the_sp experimental_1; do
+    uv run waybill --layout "$layout" generate --session "$session" --output "output/compare-$name-$layout.pdf"
+  done
+done
+```
+
 # References
 
 ## Modelling the SP

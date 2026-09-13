@@ -12,8 +12,11 @@ from waybill_generator.models.waybill import (
 
 _PRR_TUSCAN = HexColor("#7B1113")
 _WHITE = HexColor("#FFFFFF")
-_TYPEWRITER_FONT = "UnderwoodQuietTab"
-_FONT_FILE = Path(__file__).parent.parent / "fonts" / "Underwood Quiet Tab.ttf"
+# Other value-font candidates tried and kept in fonts/ for comparison:
+# Underwood Quiet Tab.ttf (original), Special Elite.ttf, Courier Prime Bold.ttf,
+# Courier Prime Regular.ttf, OCR-A.ttf. Revisit if OCR-B doesn't hold up.
+_TYPEWRITER_FONT = "OCR-B"
+_FONT_FILE = Path(__file__).parent.parent / "fonts" / "OCR-B.ttf"
 
 _ARIAL_FONT = "Arial"
 _ARIAL_FILE = Path(__file__).parent.parent / "fonts" / "Arial.ttf"
