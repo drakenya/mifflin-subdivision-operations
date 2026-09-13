@@ -4,11 +4,11 @@ Generates printable car card + waybill PDFs for PRR model railroad operations.
 
 ## Setup
 
+Requires [uv](https://docs.astral.sh/uv/).
+
 ```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
-pip install -e ".[dev]"
-waybill --help
+uv sync --extra dev
+uv run waybill --help
 ```
 
 ## Data Files
@@ -36,7 +36,7 @@ cards:
 2. Generate the PDF:
 
 ```bash
-waybill generate --session session.yaml
+uv run waybill generate --session session.yaml
 ```
 
 Output lands in `./output/waybills-YYYY-MM-DD.pdf`. Print portrait,
@@ -45,7 +45,7 @@ cut on crop marks. Each page holds 9 cards (3×3).
 ## Validation
 
 ```bash
-waybill validate
+uv run waybill validate
 ```
 
 Reports any schema errors in your data files before you try to print.
@@ -53,21 +53,28 @@ Reports any schema errors in your data files before you try to print.
 ## Development
 
 ```bash
-pytest              # run tests
-ruff check .        # lint
+uv run pytest              # run tests
+uv run ruff check .        # lint
+```
+
+Adding a dependency:
+
+```bash
+uv add <package>            # runtime dependency
+uv add --dev <package>      # dev-only dependency
 ```
 
 ### Regenerate test output PDFs
 
 ```bash
 for session in sessions/test-*.yaml; do
-  waybill --layout experimental_1 generate --session "$session" --output "output/$(basename "$session" .yaml).pdf"
+  uv run waybill --layout experimental_1 generate --session "$session" --output "output/$(basename "$session" .yaml).pdf"
 done
 ```
 
 ```bash
 for session in sessions/test-*.yaml; do
-  waybill generate --session "$session" --output "output/$(basename "$session" .yaml).pdf"
+  uv run waybill generate --session "$session" --output "output/$(basename "$session" .yaml).pdf"
 done
 ```
 

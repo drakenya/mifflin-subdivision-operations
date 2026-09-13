@@ -26,12 +26,13 @@ LOADED, EMPTY, DEADHEAD, MOW, HOLD, BAD_ORDER
 
 ## Key Commands
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"
-waybill validate                         # check data files
-waybill generate --session session.yaml  # produce PDF
-waybill list cars
-waybill list waybills [--type LOADED]
+uv sync --extra dev                             # install deps (creates .venv)
+uv run waybill validate                         # check data files
+uv run waybill generate --session session.yaml  # produce PDF
+uv run waybill list cars
+uv run waybill list waybills [--type LOADED]
+uv run pytest                                   # run tests
+uv run ruff check .                             # lint
 ```
 
 ## Design Decisions
