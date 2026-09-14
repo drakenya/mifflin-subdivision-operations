@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Industry Database Browser</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: #fff;
+    color: #111;
+  }
+  @media (prefers-color-scheme: dark) {
+    body { background: #1a1a1a; color: #eee; }
+  }
+  header {
+    padding: 12px 16px;
+    border-bottom: 1px solid #ccc;
+  }
+  h1 { font-size: 16px; margin: 0 0 8px; }
+  #controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  #controls input, #controls select {
+    font-size: 13px;
+    padding: 4px 6px;
+  }
+  #count { font-size: 12px; margin-left: auto; opacity: 0.75; white-space: nowrap; }
+  #status {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+  #file-note {
+    display: none;
+    padding: 8px 16px;
+    background: #ffe9a8;
+    color: #442;
+    font-size: 13px;
+  }
+  .row-grid {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr 0.5fr 0.7fr 1.2fr 1.5fr 1.5fr 1.8fr 1.3fr;
+    gap: 8px;
+    padding: 0 16px;
+    align-items: center;
+  }
+  #table-header {
+    font-size: 12px;
+    font-weight: 600;
+    border-bottom: 1px solid #ccc;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  #table-container {
+    position: relative;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    scrollbar-gutter: stable;
+  }
+  #spacer { position: relative; }
+  #rows-viewport { position: absolute; top: 0; left: 0; right: 0; }
+  .data-row {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 32px;
+    font-size: 12px;
+    border-bottom: 1px solid #eee;
+  }
+  .data-row > div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Industry Database Browser</h1>
+  <div id="controls">
+    <input id="filter-text" type="text" placeholder="Search all fields&hellip;" size="24">
+    <select id="filter-state"><option value="">All states</option></select>
+    <select id="filter-railroad"><option value="">All railroads</option></select>
+    <select id="filter-source"><option value="">All sources</option></select>
+    <input id="filter-cartype" type="text" list="cartype-options" placeholder="Car type&hellip;">
+    <datalist id="cartype-options"></datalist>
+    <input id="filter-commodity" type="text" list="commodity-options" placeholder="Commodity&hellip;">
+    <datalist id="commodity-options"></datalist>
+    <span id="count"></span>
+  </div>
+</header>
+<div id="status">Loading industry database&hellip;</div>
+<div id="file-note">
+  This page loads data via <code>fetch()</code>, which browsers block on
+  <code>file://</code> pages. Serve this repo over HTTP instead, e.g. from
+  the repo root: <code>python3 -m http.server 8000</code>, then open
+  <code>http://localhost:8000/tools/industry-browser.html</code>.
+</div>
+<div id="table-header" class="row-grid">
+  <div>Name</div><div>City</div><div>State</div><div>Railroad</div>
+  <div>Car Types</div><div>Ships</div><div>Receives</div><div>Notes</div><div>Source</div>
+</div>
+<div id="table-container">
+  <div id="spacer">
+    <div id="rows-viewport"></div>
+  </div>
+</div>
+<script>
+"use strict";
+
+const ROW_HEIGHT = 32;
+const OVERSCAN = 10;
+
+const SOURCE_FILES = [
+  "../industry_database/opsig/json/DHCanada.json",
+  "../industry_database/opsig/json/DHWest.json",
+  "../industry_database/opsig/json/OpSigCANADA.json",
+  "../industry_database/opsig/json/OpSigEST.json",
+  "../industry_database/opsig/json/OpSigMWC.json",
+  "../industry_database/opsig/json/OpSigSTH.json",
+  "../industry_database/opsig/json/OpSigWEST.json",
+  "../industry_database/opsig/json/OpSigWST.json",
+  "../industry_database/jbritton/json/OpSig_baltimoreeastern1945_170906.json",
+  "../industry_database/jbritton/json/OpSig_bobmartin_170802.json",
+  "../industry_database/jbritton/json/OpSig_cnj1945_170906.json",
+  "../industry_database/jbritton/json/OpSig_hbtm1942_170802.json",
+  "../industry_database/jbritton/json/OpSig_maryland1945_170906.json",
+  "../industry_database/jbritton/json/OpSig_nylb1945_170906.json",
+  "../industry_database/jbritton/json/OpSig_prrmiddle1945_170802.json",
+  "../industry_database/jbritton/json/OpSig_prrphiladelphia1945_170807.json",
+  "../industry_database/jbritton/json/OpSig_prrpittsburgh1945_170807.json",
+  "../industry_database/jbritton/json/OpSig_prrwilkesbarre1945_170807.json",
+  "../industry_database/jbritton/json/OpSig_prrwilliamsport1945_170807.json",
+];
+
+let allRecords = [];
+let filteredRecords = [];
+
+async function loadAllData() {
+  const results = await Promise.all(
+    SOURCE_FILES.map((path) =>
+      fetch(path).then((res) => {
+        if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
+        return res.json();
+      })
+    )
+  );
+  allRecords = results.flat();
+}
+
+function uniqueSorted(values) {
+  return Array.from(new Set(values.filter((v) => v))).sort((a, b) =>
+    a.localeCompare(b)
+  );
+}
+
+function populateSelect(selectEl, values) {
+  for (const v of values) {
+    const opt = document.createElement("option");
+    opt.value = v;
+    opt.textContent = v;
+    selectEl.appendChild(opt);
+  }
+}
+
+function populateFilterOptions() {
+  const states = uniqueSorted(allRecords.map((r) => r.state));
+  const railroads = uniqueSorted(allRecords.map((r) => r.railroad));
+  const sources = uniqueSorted(allRecords.map((r) => r.source_file));
+  const carTypes = uniqueSorted(allRecords.flatMap((r) => r.car_types || []));
+  const commodities = uniqueSorted(
+    allRecords.flatMap((r) => [...(r.ships || []), ...(r.receives || [])])
+  );
+
+  populateSelect(document.getElementById("filter-state"), states);
+  populateSelect(document.getElementById("filter-railroad"), railroads);
+  populateSelect(document.getElementById("filter-source"), sources);
+  populateSelect(document.getElementById("cartype-options"), carTypes);
+  populateSelect(document.getElementById("commodity-options"), commodities);
+}
+
+function getFilterValues() {
+  return {
+    text: document.getElementById("filter-text").value.trim().toLowerCase(),
+    state: document.getElementById("filter-state").value,
+    railroad: document.getElementById("filter-railroad").value,
+    source: document.getElementById("filter-source").value,
+    carType: document.getElementById("filter-cartype").value.trim().toLowerCase(),
+    commodity: document.getElementById("filter-commodity").value.trim().toLowerCase(),
+  };
+}
+
+function matchesFilters(record, filters) {
+  if (filters.state && record.state !== filters.state) return false;
+  if (filters.railroad && record.railroad !== filters.railroad) return false;
+  if (filters.source && record.source_file !== filters.source) return false;
+
+  if (filters.carType) {
+    const carTypes = record.car_types || [];
+    if (!carTypes.some((c) => c.toLowerCase().includes(filters.carType)))
+      return false;
+  }
+
+  if (filters.commodity) {
+    const commodities = [...(record.ships || []), ...(record.receives || [])];
+    if (!commodities.some((c) => c.toLowerCase().includes(filters.commodity)))
+      return false;
+  }
+
+  if (filters.text) {
+    const haystack = [
+      record.name,
+      record.city,
+      record.notes,
+      record.source_ref,
+      record.railroad,
+      record.state,
+      ...(record.car_types || []),
+      ...(record.ships || []),
+      ...(record.receives || []),
+    ]
+      .join(" ")
+      .toLowerCase();
+    if (!haystack.includes(filters.text)) return false;
+  }
+
+  return true;
+}
+
+function escapeHtml(s) {
+  return s == null
+    ? ""
+    : String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
+function renderRowHtml(record, index) {
+  const top = index * ROW_HEIGHT;
+  const cells = [
+    record.name,
+    record.city,
+    record.state,
+    record.railroad,
+    (record.car_types || []).join(", "),
+    (record.ships || []).join(", "),
+    (record.receives || []).join(", "),
+    record.notes,
+    record.source_file,
+  ];
+  const cellsHtml = cells
+    .map((c) => `<div title="${escapeHtml(c)}">${escapeHtml(c)}</div>`)
+    .join("");
+  return `<div class="data-row row-grid" style="top:${top}px">${cellsHtml}</div>`;
+}
+
+function renderVisibleRows() {
+  const container = document.getElementById("table-container");
+  const viewport = document.getElementById("rows-viewport");
+  const scrollTop = container.scrollTop;
+  const visibleCount = Math.ceil(container.clientHeight / ROW_HEIGHT);
+
+  const start = Math.max(0, Math.floor(scrollTop / ROW_HEIGHT) - OVERSCAN);
+  const end = Math.min(
+    filteredRecords.length,
+    start + visibleCount + OVERSCAN * 2
+  );
+
+  let html = "";
+  for (let i = start; i < end; i++) {
+    html += renderRowHtml(filteredRecords[i], i);
+  }
+  viewport.innerHTML = html;
+}
+
+function applyFilters() {
+  const filters = getFilterValues();
+  filteredRecords = allRecords.filter((r) => matchesFilters(r, filters));
+  document.getElementById("count").textContent =
+    `${filteredRecords.length.toLocaleString()} of ${allRecords.length.toLocaleString()} records`;
+  updateSpacerHeight();
+  renderVisibleRows();
+}
+
+function updateSpacerHeight() {
+  document.getElementById("spacer").style.height =
+    `${filteredRecords.length * 32}px`;
+}
+
+function debounce(fn, wait) {
+  let timer = null;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), wait);
+  };
+}
+
+function wireControls() {
+  document
+    .getElementById("filter-text")
+    .addEventListener("input", debounce(applyFilters, 150));
+  for (const id of [
+    "filter-state",
+    "filter-railroad",
+    "filter-source",
+    "filter-cartype",
+    "filter-commodity",
+  ]) {
+    document.getElementById(id).addEventListener("input", applyFilters);
+  }
+  document
+    .getElementById("table-container")
+    .addEventListener("scroll", () => requestAnimationFrame(renderVisibleRows));
+}
+
+async function init() {
+  try {
+    await loadAllData();
+  } catch (err) {
+    document.getElementById("status").textContent = `Failed to load data: ${err.message}`;
+    if (location.protocol === "file:") {
+      document.getElementById("file-note").style.display = "block";
+    }
+    return;
+  }
+  document.getElementById("status").style.display = "none";
+  populateFilterOptions();
+  wireControls();
+  applyFilters();
+}
+
+init();
+</script>
+</body>
+</html>

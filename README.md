@@ -50,6 +50,21 @@ uv run waybill validate
 
 Reports any schema errors in your data files before you try to print.
 
+## Industry Database Browser
+
+`tools/industry-browser.html` is a standalone page for searching and
+filtering the ~73k industry records converted from the OpSIG/JBritton
+source files (`uv run waybill convert-industry-db`). It reads directly
+from the generated `industry_database/` JSON, so serve the repo over
+HTTP rather than opening the file directly:
+
+```bash
+uv run waybill convert-industry-db   # if industry_database/ doesn't exist yet
+uv run python -m http.server 8000    # from the repo root
+```
+
+Then open `http://localhost:8000/tools/industry-browser.html`.
+
 ## Development
 
 ```bash

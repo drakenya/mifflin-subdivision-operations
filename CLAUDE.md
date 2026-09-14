@@ -36,6 +36,23 @@ uv run pytest                                   # run tests
 uv run ruff check .                             # lint
 ```
 
+## Industry Database Browser
+`tools/industry-browser.html` is a standalone page for searching/filtering
+the ~73k records produced by `convert-industry-db`. It reads directly from
+`industry_database/{opsig,jbritton}/json/*.json` via `fetch()`, so it must
+be served over HTTP (not opened via `file://`):
+
+```bash
+uv run waybill convert-industry-db   # if industry_database/ doesn't exist yet
+uv run python -m http.server 8000    # from the repo root
+```
+
+Then open `http://localhost:8000/tools/industry-browser.html`.
+
+The list of source files the page loads is hardcoded in its `SOURCE_FILES`
+constant and needs a manual update if `convert-industry-db`'s source file
+set ever changes.
+
 ## Design Decisions
 - YAML first; SQLite backend planned once schema stabilises
 - No static assignments — session file is the mapping for each print job
