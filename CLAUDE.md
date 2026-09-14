@@ -31,6 +31,7 @@ uv run waybill validate                         # check data files
 uv run waybill generate --session session.yaml  # produce PDF
 uv run waybill list cars
 uv run waybill list waybills [--type LOADED]
+uv run waybill convert-industry-db                # convert opsig/jbritton source files to JSON
 uv run pytest                                   # run tests
 uv run ruff check .                             # lint
 ```

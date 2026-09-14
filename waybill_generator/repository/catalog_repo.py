@@ -67,30 +67,3 @@ class CatalogRepository:
             results = [e for e in results if e.source.lower() == source.lower()]
 
         return results[:limit]
-
-    def replace_from_source(
-        self,
-        source_file: str,
-        new_entries: list[CatalogIndustry],
-    ) -> tuple[int, int]:
-        raw = yaml.safe_load(self._path.read_text()) if self._path.exists() else None
-        existing = [CatalogIndustry(**r) for r in (raw or [])]
-
-        old_ids = {e.id for e in existing if e.source_file == source_file}
-        new_ids = {e.id for e in new_entries}
-
-        replaced = len(old_ids & new_ids)
-        added = len(new_ids - old_ids)
-
-        kept = [e for e in existing if e.source_file != source_file]
-        merged = kept + new_entries
-
-        self._path.write_text(
-            yaml.dump(
-                [e.model_dump(exclude_none=True) for e in merged],
-                default_flow_style=False,
-                allow_unicode=True,
-            )
-        )
-        self._entries = None
-        return replaced, added

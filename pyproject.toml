@@ -11,8 +11,8 @@ dependencies = [
     "pydantic>=2",
     "reportlab>=4",
     "pyyaml>=6",
-    "xlrd>=2",
     "openpyxl>=3",
+    "xlrd>=2",
 ]
 
 [project.scripts]

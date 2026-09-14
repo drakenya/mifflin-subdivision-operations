@@ -363,78 +363,6 @@ def add_industry(ctx, catalog_id, preview):
         click.echo(f"Added location {target_loc_id} with industry {ind_id} to locations.yaml.")
 
 
-@main.command("import")
-@click.argument("filepath", type=click.Path(exists=True))
-@click.option("--source", default=None, type=click.Choice(["opsig", "jbritton"]),
-              help="Source format (auto-detected from parent directory if omitted)")
-@click.option("--industry-db", default="./industry_database", show_default=True,
-              help="Path to industry_database directory")
-@click.pass_context
-def import_catalog(ctx, filepath, source, industry_db):
-    """Import an OpSIG or JBritton source file into the industry catalog."""
-    from waybill_generator.importers.opsig import parse_opsig
-    from waybill_generator.importers.jbritton import parse_jbritton
-    from waybill_generator.importers.base import group_rows
-    from waybill_generator.importers.normalizer import normalize_entries
-
-    fp = Path(filepath)
-    db_path = Path(industry_db)
-    data_path = Path(ctx.obj["data_path"])
-
-    if source is None:
-        parent = fp.parent.name.lower()
-        if parent == "opsig":
-            source = "opsig"
-        elif parent == "jbritton":
-            source = "jbritton"
-        else:
-            click.echo(
-                f"Cannot auto-detect source from directory {fp.parent.name!r}. "
-                "Use --source opsig or --source jbritton.",
-                err=True,
-            )
-            raise SystemExit(1)
-
-    rows = parse_opsig(fp) if source == "opsig" else parse_jbritton(fp)
-    grouped = group_rows(rows)
-    source_file = fp.name
-
-    catalog_path = data_path / "industry_catalog.yaml"
-    entries, report = normalize_entries(
-        grouped, source, source_file,
-        db_path / "commodity_map.yaml",
-        db_path / "opsig_car_map.yaml",
-        data_path / "commodities.yaml",
-    )
-
-    catalog_repo = CatalogRepository(catalog_path)
-    replaced, added = catalog_repo.replace_from_source(source_file, entries)
-    total = len(catalog_repo.search(limit=999_999))
-
-    click.echo(f"\nImporting: {source_file}  [{source}]")
-    click.echo(f"  Rows parsed:    {len(rows):<6}  →  {len(grouped)} industries grouped")
-    click.echo(f"  Replaced:       {replaced:<6}  existing entries")
-    click.echo(f"  Added:          {added:<6}  new entries")
-    click.echo(f"  Catalog total:  {total:<6}  entries")
-    click.echo()
-    click.echo("Commodity normalization:")
-    click.echo(f"  map-matched:    {report.map_count}")
-    click.echo(f"  auto-matched:   {report.auto_count}")
-    click.echo(f"  free-text:      {report.free_count}")
-
-    if report.unmatched:
-        click.echo()
-        click.echo("Unmatched commodities (add to commodity_map.yaml to normalize):")
-        for commodity, count in sorted(report.unmatched.items(), key=lambda x: -x[1]):
-            noun = "industry" if count == 1 else "industries"
-            click.echo(f"  {commodity!r:<40} {count} {noun}")
-
-    if report.unknown_car_codes:
-        click.echo()
-        unknown = ", ".join(report.unknown_car_codes)
-        click.echo(f"Unknown OpSIG car codes (not in opsig_car_map.yaml): {unknown}")
-
-
 @main.command("import-roster")
 @click.option("--source", required=True, type=click.Path(exists=True),
               help="Path to the roster .xlsx file (e.g. a OneDrive-synced spreadsheet)")
@@ -489,3 +417,50 @@ def import_roster(ctx, source):
         for type_text, count in sorted(report.unmapped_types.items(), key=lambda x: -x[1]):
             noun = "car" if count == 1 else "cars"
             click.echo(f"  {type_text!r:<50} {count} {noun}")
+
+
+@main.command("convert-industry-db")
+@click.option("--industry-db", default="./industry_database", show_default=True,
+              type=click.Path(exists=True, file_okay=False),
+              help="Path to industry_database directory")
+def convert_industry_db(industry_db):
+    """Convert raw OpSIG/JBritton source files into structured JSON."""
+    import json
+    from waybill_generator.converters.base import group_by_industry, to_json_records
+    from waybill_generator.converters.opsig import parse_opsig
+    from waybill_generator.converters.jbritton import parse_jbritton
+
+    db_path = Path(industry_db)
+    sources = [
+        ("opsig", db_path / "opsig", (".xls", ".txt"), parse_opsig),
+        ("jbritton", db_path / "jbritton", (".txt",), parse_jbritton),
+    ]
+
+    for source, source_dir, extensions, parse_fn in sources:
+        if not source_dir.is_dir():
+            continue
+        json_dir = source_dir / "json"
+        json_dir.mkdir(exist_ok=True)
+
+        for filepath in sorted(source_dir.iterdir()):
+            if not filepath.is_file():
+                continue
+            if filepath.suffix.lower() not in extensions:
+                click.echo(f"Skipping unrecognized file: {filepath}")
+                continue
+
+            try:
+                rows, skipped = parse_fn(filepath)
+            except Exception as exc:
+                click.echo(f"ERROR parsing {filepath}: {exc}")
+                continue
+
+            groups = group_by_industry(rows)
+            records = to_json_records(groups, source, filepath.name)
+            out_path = json_dir / f"{filepath.stem}.json"
+            out_path.write_text(json.dumps(records, indent=2, sort_keys=True) + "\n")
+
+            click.echo(
+                f"{filepath.name}: {len(rows)} rows parsed, {len(groups)} industries grouped, "
+                f"{skipped} rows skipped -> {out_path}"
+            )
