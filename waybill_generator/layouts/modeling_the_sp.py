@@ -47,6 +47,12 @@ _HEADLINE_FONT = "Times-Bold"
 _SUBTITLE_FONT = "Oswald"
 _SUBTITLE_FONT_FILE = Path(__file__).parent.parent / "fonts" / "Oswald.ttf"
 
+# "BAD ORDER" stripe text on the bad-order card: a heavy slab serif, closer
+# to the reference SP card's blocky lettering than the Times family used
+# for the origination headline elsewhere.
+_STRIPE_FONT = "ArvoBold"
+_STRIPE_FONT_FILE = Path(__file__).parent.parent / "fonts" / "Arvo Bold.ttf"
+
 _BILL_TYPE_LABELS: dict[WaybillType, str] = {
     WaybillType.LOADED: "FREIGHT WAYBILL",
     WaybillType.EMPTY: "EMPTY CAR BILL",
@@ -84,18 +90,29 @@ def _register_subtitle_font() -> None:
         pdfmetrics.registerFont(TTFont(_SUBTITLE_FONT, str(_SUBTITLE_FONT_FILE)))
 
 
+def _register_stripe_font() -> None:
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
+    try:
+        pdfmetrics.getFont(_STRIPE_FONT)
+    except KeyError:
+        pdfmetrics.registerFont(TTFont(_STRIPE_FONT, str(_STRIPE_FONT_FILE)))
+
+
 class ModelingTheSpLayout(BaseLayout):
     value_font: str = _TYPEWRITER_FONT
     label_font: str = _LABEL_FONT
     railroad_name_font: str = _RAILROAD_NAME_FONT
     headline_font: str = _HEADLINE_FONT
     subtitle_font: str = _SUBTITLE_FONT
+    stripe_font: str = _STRIPE_FONT
     origination_height_pt: float = 42.0
 
     def __init__(self) -> None:
         _register_typewriter_font()
         _register_label_font()
         _register_subtitle_font()
+        _register_stripe_font()
 
     # -- Origination Band -----------------------------------------------------
     # Matched against a scanned AAR Form 98 freight waybill: AAR form number
@@ -340,9 +357,14 @@ class ModelingTheSpLayout(BaseLayout):
         face = pdfmetrics.getFont(self.value_font).face
         return face.bbox[3] / face.unitsPerEm * size
 
+    def _value_upper(self, text: str) -> str:
+        """Uppercase for the value font, substituting characters it lacks
+        (Mom's Typewriter Actual has no em/en dash, only a plain hyphen)."""
+        return text.upper().replace("—", "-").replace("–", "-")
+
     def _will_wrap(self, text: str, max_width: float, size: float = 8) -> bool:
         from reportlab.pdfbase.pdfmetrics import stringWidth
-        return stringWidth(text.upper(), self.value_font, size) > max_width
+        return stringWidth(self._value_upper(text), self.value_font, size) > max_width
 
     def _centered_value_baseline(
         self, label_bottom: float, rule_y: float, rule_width: float = 0.5, size: float = 8,
@@ -367,14 +389,14 @@ class ModelingTheSpLayout(BaseLayout):
     def _value(self, canvas: Canvas, text: str, x: float, y: float, size: int = 8) -> None:
         canvas.setFont(self.value_font, size)
         canvas.setFillColor(black)
-        canvas.drawString(x, y, text.upper())
+        canvas.drawString(x, y, self._value_upper(text))
 
     def _value_fit(
         self, canvas: Canvas, text: str, x: float, y: float, max_width: float, max_size: int = 8
     ) -> None:
         """Draw value font text at max_size, truncating with ellipsis if too wide."""
         from reportlab.pdfbase.pdfmetrics import stringWidth
-        text = text.upper()
+        text = self._value_upper(text)
         if stringWidth(text, self.value_font, max_size) <= max_width:
             canvas.setFont(self.value_font, max_size)
             canvas.setFillColor(black)
@@ -393,7 +415,7 @@ class ModelingTheSpLayout(BaseLayout):
     ) -> None:
         """Wrap to a second line at the nearest word boundary; truncate line 2 with ellipsis if needed."""
         from reportlab.pdfbase.pdfmetrics import stringWidth
-        text = text.upper()
+        text = self._value_upper(text)
         canvas.setFillColor(black)
         canvas.setFont(self.value_font, size)
         if stringWidth(text, self.value_font, size) <= max_width:
@@ -425,7 +447,7 @@ class ModelingTheSpLayout(BaseLayout):
         """Word-wrap top-anchored (y_top is line 1's baseline) up to max_lines;
         truncate the final line with an ellipsis if content remains."""
         from reportlab.pdfbase.pdfmetrics import stringWidth
-        text = text.upper()
+        text = self._value_upper(text)
         canvas.setFillColor(black)
         canvas.setFont(self.value_font, size)
         words = text.split()
@@ -463,7 +485,7 @@ class ModelingTheSpLayout(BaseLayout):
         from reportlab.pdfbase.pdfmetrics import stringWidth
         canvas.setFillColor(black)
         canvas.setFont(self.value_font, size)
-        tokens = [s.upper() + "-" for s in segments]
+        tokens = [self._value_upper(s) + "-" for s in segments]
         if tokens:
             tokens[-1] = tokens[-1][:-1]
         lines: list[str] = []
@@ -512,8 +534,8 @@ class ModelingTheSpLayout(BaseLayout):
 
         # TO STATION, STATE | FROM STATION, STATE (2-line capable, same as
         # CONSIGNEE/SHIPPER now that the rows are the same height)
-        to_val = f"{w.to_city}, {w.to_state}" if w.to_city else w.consignee_id
-        from_val = f"{w.from_city}, {w.from_state}" if w.from_city else w.shipper_id
+        to_val = f"{w.to_city}, {w.to_state}" if w.to_city and w.to_state else (w.to_city or w.consignee_id)
+        from_val = f"{w.from_city}, {w.from_state}" if w.from_city and w.from_state else (w.from_city or w.shipper_id)
         label_top = cursor
         rule_y = label_top - self._ROW_TO_FROM
         self._label(canvas, "TO STATION, STATE", x, label_top, top_width=2.0)
@@ -631,16 +653,20 @@ class ModelingTheSpLayout(BaseLayout):
     def _draw_empty(
         self, canvas: Canvas, w: EmptyWaybill, x: float, y: float, ww: float, h: float
     ) -> None:
+        # Matched against Southern Pacific's "Empty Car Bill" (Form 151):
+        # FOR HOME (Billed from / To or Via + R.R.) then FOR LOADING (Billed
+        # from / To), no Shipper/Spot row on the reference form, and the
+        # exact instructions text -- reproduced verbatim below.
         cursor = y + h
         mid = x + ww / 2
 
         # ── FOR HOME ──────────────────────────────────────────────────────
-        cursor -= 17
+        cursor -= 19
         self._section_header(canvas, "FOR HOME", x, cursor, ww)
         cursor -= 3
 
         label_top = cursor
-        rule_y = label_top - 16
+        rule_y = label_top - 19
         self._label(canvas, "Billed from", x, label_top, top_width=0)
         if w.home_billed_from:
             label_bottom = self._label_bottom(label_top, top_width=0)
@@ -653,7 +679,7 @@ class ModelingTheSpLayout(BaseLayout):
 
         col_rr = x + ww * 3 / 4
         label_top = cursor
-        rule_y = label_top - 16
+        rule_y = label_top - 19
         self._label(canvas, "To or Via", x, label_top)
         self._label(canvas, "R.R.", col_rr, label_top, left_width=0.4)
         self._vcol(canvas, col_rr, rule_y, label_top - rule_y)
@@ -664,15 +690,15 @@ class ModelingTheSpLayout(BaseLayout):
         if w.home_rr:
             self._value_fit(canvas, w.home_rr, col_rr + 2, value_y, ww / 4 - 4)
         self._rule(canvas, x, rule_y, ww, width=0.85)
-        cursor = rule_y - 8
+        cursor = rule_y - 10
 
         # ── FOR LOADING ───────────────────────────────────────────────────
-        cursor -= 10
+        cursor -= 12
         self._section_header(canvas, "FOR LOADING", x, cursor, ww)
         cursor -= 3
 
         label_top = cursor
-        rule_y = label_top - 16
+        rule_y = label_top - 19
         self._label(canvas, "Billed from", x, label_top, top_width=0)
         label_bottom = self._label_bottom(label_top, top_width=0)
         self._value_fit(
@@ -683,7 +709,7 @@ class ModelingTheSpLayout(BaseLayout):
         cursor = rule_y
 
         label_top = cursor
-        rule_y = label_top - 16
+        rule_y = label_top - 19
         self._label(canvas, "To", x, label_top)
         label_bottom = self._label_bottom(label_top)
         self._value_fit(
@@ -693,28 +719,34 @@ class ModelingTheSpLayout(BaseLayout):
         self._rule(canvas, x, rule_y, ww)
         cursor = rule_y
 
-        label_top = cursor
-        rule_y = label_top - 16
-        self._label(canvas, "Shipper", x, label_top)
-        self._label(canvas, "Spot", mid, label_top, left_width=0.4)
-        label_bottom = self._label_bottom(label_top)
-        value_y = self._centered_value_baseline(label_bottom, rule_y)
-        if w.shipper_ordered_by:
-            self._value_fit(canvas, w.shipper_ordered_by, x + 2, value_y, mid - x - 4)
-        if w.spot:
-            self._value_fit(canvas, w.spot, mid + 2, value_y, x + ww - mid - 4)
-        self._vcol(canvas, mid, rule_y, label_top - rule_y)
-        self._rule(canvas, x, rule_y, ww)
+        # Shipper/Spot -- not on the reference form, so only drawn (as a
+        # compact extra row) when the data is actually present.
+        if w.shipper_ordered_by or w.spot:
+            label_top = cursor
+            rule_y = label_top - 16
+            self._label(canvas, "Shipper", x, label_top)
+            self._label(canvas, "Spot", mid, label_top, left_width=0.4)
+            label_bottom = self._label_bottom(label_top)
+            value_y = self._centered_value_baseline(label_bottom, rule_y)
+            if w.shipper_ordered_by:
+                self._value_fit(canvas, w.shipper_ordered_by, x + 2, value_y, mid - x - 4)
+            if w.spot:
+                self._value_fit(canvas, w.spot, mid + 2, value_y, x + ww - mid - 4)
+            self._vcol(canvas, mid, rule_y, label_top - rule_y)
+            self._rule(canvas, x, rule_y, ww)
+            cursor = rule_y
 
-        # Instructions
-        canvas.setFont(self.label_font, 4.5)
-        canvas.setFillColor(black)
-        canvas.drawString(x + 2, y + 26,
-            "INSTRUCTIONS – This form must accompany all empty foreign cars,")
-        canvas.drawString(x + 2, y + 20,
-            "and System empty cars intended for loading, and must be used in")
-        canvas.drawString(x + 2, y + 14,
-            "billing private line cars under General Order Ten.")
+        # Instructions -- verbatim from the SP Form 151 reference.
+        instr_size = 4.5
+        for i, line in enumerate([
+            "INSTRUCTIONS – This form must accompany all",
+            "empty foreign cars and must be used in billing",
+            "private line cars under General Order Ten.",
+        ]):
+            self._draw_tracked_string(
+                canvas, x + 2, cursor - 8 - i * (instr_size + 2.5),
+                line, self.label_font, instr_size,
+            )
 
     def _draw_deadhead(
         self, canvas: Canvas, w: DeadheadWaybill, x: float, y: float, ww: float, h: float
@@ -751,45 +783,22 @@ class ModelingTheSpLayout(BaseLayout):
     def _draw_mow(
         self, canvas: Canvas, w: MoWWaybill, x: float, y: float, ww: float, h: float
     ) -> None:
-        cursor = y + h
-
-        label_top = cursor
-        rule_y = label_top - 24
-        self._label(canvas, "MATERIAL", x, label_top, top_width=2.0)
-        label_bottom = self._label_bottom(label_top, top_width=2.0)
-        self._value_fit(
-            canvas, w.commodity_desc, x + 2,
-            self._centered_value_baseline(label_bottom, rule_y), ww - 4,
+        """MOW loads get no distinct prototype form -- Tony Thompson's own
+        examples (e.g. an SP ballast move to an outfit track) are filled out
+        on the plain Freight Waybill, just like a LOADED shipment. Adapt the
+        MOW fields onto a LoadedWaybill and reuse that renderer."""
+        loaded_view = LoadedWaybill(
+            id=w.id,
+            originating_railroad_id=w.originating_railroad_id,
+            notes=w.project,
+            commodity_id=w.commodity_desc,
+            shipper_id="",
+            consignee_id="",
+            to_city=w.to_location_id,
+            consignee_name="TRACK FOREMAN, OUTFIT TRACK",
+            from_city=w.from_location_id,
         )
-        self._rule(canvas, x, rule_y, ww)
-        cursor = rule_y
-
-        label_top = cursor
-        rule_y = label_top - 24
-        self._label(canvas, "FROM", x, label_top)
-        label_bottom = self._label_bottom(label_top)
-        self._value_fit(
-            canvas, w.from_location_id, x + 2,
-            self._centered_value_baseline(label_bottom, rule_y), ww - 4,
-        )
-        self._rule(canvas, x, rule_y, ww)
-        cursor = rule_y
-
-        label_top = cursor
-        rule_y = label_top - 24
-        self._label(canvas, "TO", x, label_top)
-        label_bottom = self._label_bottom(label_top)
-        self._value_fit(
-            canvas, w.to_location_id, x + 2,
-            self._centered_value_baseline(label_bottom, rule_y), ww - 4,
-        )
-        self._rule(canvas, x, rule_y, ww)
-        cursor = rule_y
-
-        if w.project:
-            self._label(canvas, "PROJECT", x, cursor)
-            cursor -= 10
-            self._value_wrap(canvas, w.project, x + 2, cursor - 9, ww - 4, line_gap=2)
+        self._draw_loaded(canvas, loaded_view, x, y, ww, h)
 
     def _draw_hold(
         self, canvas: Canvas, w: HoldWaybill, x: float, y: float, ww: float, h: float
@@ -811,34 +820,84 @@ class ModelingTheSpLayout(BaseLayout):
         cursor -= 10
         self._value_wrap(canvas, w.waiting_for, x + 2, cursor - 9, ww - 4, line_gap=2)
 
+    # Matched against the real SP "Bad Order" card (Form L-7017-A): a big
+    # diagonal red stripe with "BAD ORDER" across it, dominating the card,
+    # with REMOVED FROM TRAIN/DATE, TO/SHOP, DEFECT, CAR INITIALS/LOADED OR
+    # EMPTY, and PLACE CARDED/INSPECTOR fields above and below.
+    _STRIPE_COLOR = HexColor("#B7261E")
+    _STRIPE_ANGLE = 9.0
+    _STRIPE_HALF_HEIGHT = 15.0
+
     def _draw_bad_order(
         self, canvas: Canvas, w: BadOrderWaybill, x: float, y: float, ww: float, h: float
     ) -> None:
+        mid = x + ww / 2
         cursor = y + h
 
-        label_top = cursor
-        rule_y = label_top - 24
-        self._label(canvas, "FROM", x, label_top, top_width=2.0)
-        label_bottom = self._label_bottom(label_top, top_width=2.0)
-        self._value_fit(
-            canvas, w.from_location_id, x + 2,
-            self._centered_value_baseline(label_bottom, rule_y), ww - 4,
-        )
-        self._rule(canvas, x, rule_y, ww)
-        cursor = rule_y
+        # REMOVED FROM TRAIN | DATE
+        self._label(canvas, "REMOVED FROM TRAIN", x, cursor, top_width=2.0)
+        self._label(canvas, "DATE", mid, cursor, top_width=2.0, left_width=0.4)
+        cursor -= 13
+        self._vcol(canvas, mid, cursor, 13)
+        self._rule(canvas, x, cursor, ww)
 
+        # TO | SHOP
         label_top = cursor
-        rule_y = label_top - 24
-        self._label(canvas, "REPAIR SHOP", x, label_top)
-        label_bottom = self._label_bottom(label_top)
-        self._value_fit(
-            canvas, w.shop_location_id, x + 2,
-            self._centered_value_baseline(label_bottom, rule_y), ww - 4,
-        )
-        self._rule(canvas, x, rule_y, ww)
-        cursor = rule_y
+        self._label(canvas, "TO", x, label_top)
+        self._label(canvas, "SHOP", mid, label_top, left_width=0.4)
+        if w.shop_location_id:
+            label_bottom = self._label_bottom(label_top)
+            self._value_fit(canvas, w.shop_location_id, mid + 2, label_bottom - 9, ww / 2 - 4)
+        cursor -= 20
+        self._vcol(canvas, mid, cursor, 20)
+        self._rule(canvas, x, cursor, ww)
 
+        # Diagonal "BAD ORDER" stripe -- clipped to the card's own width so
+        # the stripe never bleeds into neighboring cards on the printed page.
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+        stripe_h = 48.0
+        stripe_cy = cursor - stripe_h / 2
+        canvas.saveState()
+        clip = canvas.beginPath()
+        clip.rect(x, y, ww, h)
+        canvas.clipPath(clip, stroke=0, fill=0)
+        canvas.translate(x + ww / 2, stripe_cy)
+        canvas.rotate(self._STRIPE_ANGLE)
+        span = ww * 1.5
+        canvas.setFillColor(self._STRIPE_COLOR)
+        canvas.rect(-span / 2, -self._STRIPE_HALF_HEIGHT, span, self._STRIPE_HALF_HEIGHT * 2, fill=1, stroke=0)
+        canvas.setFillColor(black)
+        stripe_size = 20.0
+        while stripe_size > 8 and stringWidth("BAD ORDER", self.stripe_font, stripe_size) > ww - 6:
+            stripe_size -= 1
+        canvas.setFont(self.stripe_font, stripe_size)
+        canvas.drawCentredString(0, -stripe_size * 0.32, "BAD ORDER")
+        canvas.restoreState()
+        cursor -= stripe_h
+
+        # DEFECT
+        label_top = cursor
+        self._label(canvas, "DEFECT", x, label_top)
+        cursor -= 11
         if w.defect:
-            self._label(canvas, "DEFECT", x, cursor)
-            cursor -= 10
-            self._value_wrap(canvas, w.defect, x + 2, cursor - 9, ww - 4, line_gap=2)
+            self._value_wrap(canvas, w.defect, x + 2, cursor - 8, ww - 4, size=7, line_gap=2)
+        cursor -= 16
+        self._rule(canvas, x, cursor, ww)
+
+        # CAR INITIALS | LOADED OR EMPTY
+        self._label(canvas, "CAR INITIALS", x, cursor)
+        self._label(canvas, "LOADED OR EMPTY", mid, cursor, left_width=0.4)
+        cursor -= 13
+        self._vcol(canvas, mid, cursor, 13)
+        self._rule(canvas, x, cursor, ww)
+
+        # PLACE CARDED | INSPECTOR
+        label_top = cursor
+        self._label(canvas, "PLACE CARDED", x, label_top)
+        self._label(canvas, "INSPECTOR", mid, label_top, left_width=0.4)
+        if w.from_location_id:
+            label_bottom = self._label_bottom(label_top)
+            self._value_fit(canvas, w.from_location_id, x + 2, label_bottom - 9, mid - x - 4)
+        cursor -= 20
+        self._vcol(canvas, mid, cursor, 20)
+        self._rule(canvas, x, cursor, ww)
