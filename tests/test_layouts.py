@@ -34,7 +34,7 @@ def test_value_wrap_short_text_draws_once():
     from waybill_generator.layouts.experimental_1 import Experimental1Layout
     layout = Experimental1Layout()
     canvas = MagicMock()
-    layout._value_wrap(canvas, "short", x=0, y=100, max_w=200, size=9)
+    layout._value_wrap(canvas, "short", x=0, y=100, max_w=200)
     assert canvas.drawString.call_count == 1
     assert canvas.drawString.call_args_list[0].args[1] == 100  # y unchanged
 
@@ -45,7 +45,7 @@ def test_value_wrap_long_text_wraps_to_two_lines():
     layout = Experimental1Layout()
     canvas = MagicMock()
     # Courier-Bold 9pt: each char ≈ 5.4pt. "hello"=27pt fits in 30, "hello world"=59.4pt does not.
-    layout._value_wrap(canvas, "hello world", x=0, y=100, max_w=30, size=9, max_lines=2)
+    layout._value_wrap(canvas, "hello world", x=0, y=100, max_w=30, max_lines=2)
     assert canvas.drawString.call_count == 2
     assert canvas.drawString.call_args_list[0].args[1] == 100       # line 1 at y
     assert canvas.drawString.call_args_list[1].args[1] == 100 - (9 + 2)  # line 2 at y - (size+gap)
@@ -57,7 +57,7 @@ def test_value_wrap_overflow_truncates_with_ellipsis():
     layout = Experimental1Layout()
     canvas = MagicMock()
     # max_lines=1, "hello world" can't fit in 30pt on one line → truncate with "…"
-    layout._value_wrap(canvas, "hello world", x=0, y=100, max_w=30, size=9, max_lines=1)
+    layout._value_wrap(canvas, "hello world", x=0, y=100, max_w=30, max_lines=1)
     assert canvas.drawString.call_count == 1
     drawn = canvas.drawString.call_args_list[0].args[2]
     assert drawn.endswith("…"), f"Expected truncation with '…', got: {drawn!r}"
@@ -69,7 +69,7 @@ def test_value_wrap_single_oversized_word_truncates():
     layout = Experimental1Layout()
     canvas = MagicMock()
     # "superlongword" is 13 chars × 5.4pt ≈ 70pt in Courier-Bold 9pt; max_w=30 forces truncation
-    layout._value_wrap(canvas, "superlongword", x=0, y=100, max_w=30, size=9, max_lines=1)
+    layout._value_wrap(canvas, "superlongword", x=0, y=100, max_w=30, max_lines=1)
     assert canvas.drawString.call_count == 1
     drawn = canvas.drawString.call_args_list[0].args[2]
     assert drawn.endswith("…"), f"Expected truncation with '…', got: {drawn!r}"
@@ -95,7 +95,7 @@ def test_layout_constants():
     layout = AkMainLayout()
     assert layout.card_width_pt == 180.0
     assert layout.card_height_pt == 252.0
-    assert layout.origination_height_pt == 35.0
+    assert layout.origination_height_pt == 42.0
     assert layout.car_height_pt == 50.0
     assert layout.gutter_pt == 0.0
     assert layout.content_inset_pt == 4.5
