@@ -5,7 +5,8 @@ from waybill_generator.models.location import Location, Industry
 from waybill_generator.models.commodity import Commodity
 from waybill_generator.models.waybill import (
     WaybillType, LoadedWaybill, EmptyWaybill, DeadheadWaybill,
-    MoWWaybill, HoldWaybill, BadOrderWaybill, Waybill,
+    MoWWaybill, HoldWaybill, BadOrderWaybill, StopOffWaybill,
+    TemporaryWaybill, PerishableWaybill, LivestockWaybill, Waybill,
 )
 
 _waybill_adapter = TypeAdapter(Waybill)
@@ -114,6 +115,44 @@ class TestWaybillDiscrimination:
         })
         assert isinstance(w, BadOrderWaybill)
         assert w.defect is None
+
+    def test_stop_off_waybill(self):
+        w = _waybill_adapter.validate_python({
+            "id": "s-1", "waybill_type": "STOP_OFF", "originating_railroad_id": "PRR",
+            "at_location": "Santa Rosalia CA", "for_reason": "Unloading",
+            "contents": "LCL", "waybilled_from": "Portland OR",
+        })
+        assert isinstance(w, StopOffWaybill)
+
+    def test_temporary_waybill(self):
+        w = _waybill_adapter.validate_python({
+            "id": "t-1", "waybill_type": "TEMPORARY", "originating_railroad_id": "PRR",
+            "waybill_no": "46", "from_location_id": "ALT", "to_location_id": "LEW",
+            "shipper_name": "Standard Steel Works", "consignee_address": "Lewistown Freight House",
+            "commodity_desc": "Steel coil",
+        })
+        assert isinstance(w, TemporaryWaybill)
+        assert w.routing is None
+
+    def test_perishable_waybill(self):
+        w = _waybill_adapter.validate_python({
+            "id": "p-1", "waybill_type": "PERISHABLE", "originating_railroad_id": "PRR",
+            "commodity_id": "cantaloupes", "shipper_name": "Westside Produce Co.",
+            "consignee_name": "M. Foster, Frt. House", "to_city": "Willimantic", "to_state": "CT",
+            "from_city": "Firebaugh", "from_state": "CA",
+        })
+        assert isinstance(w, PerishableWaybill)
+        assert w.routing == []
+
+    def test_livestock_waybill(self):
+        w = _waybill_adapter.validate_python({
+            "id": "l-1", "waybill_type": "LIVESTOCK", "originating_railroad_id": "PRR",
+            "description_of_stock": "Steers", "no_head": "36",
+            "shipper_name": "Nebraska Cattlemen's Association", "consignee_name": "Berkshire Custom Meats",
+            "to_city": "Northfield", "to_state": "MA", "from_city": "North Platte", "from_state": "NE",
+        })
+        assert isinstance(w, LivestockWaybill)
+        assert w.attendant_in_charge is False
 
     def test_invalid_type_raises(self):
         with pytest.raises(ValidationError):

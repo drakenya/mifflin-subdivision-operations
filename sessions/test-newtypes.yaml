@@ -1,0 +1,18 @@
+# New form types: Stop Off, Temporary, Perishable, Livestock
+cards:
+  - car: PRR-12345
+    waybill: stopoff-1
+  - car: PRR-67890
+    waybill: stopoff-2
+  - car: PRR-47823
+    waybill: temp-1
+  - car: PRR-52167
+    waybill: temp-2
+  - car: NYC-158923
+    waybill: perishable-1
+  - car: PRR-61044
+    waybill: perishable-2
+  - car: PRR-100432
+    waybill: livestock-1
+  - car: PRR-155789
+    waybill: livestock-2

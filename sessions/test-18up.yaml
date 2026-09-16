@@ -1,4 +1,4 @@
-# 18 cards — two full pages
+# 26 cards — three pages (two full, one partial)
 cards:
   # Page 1
   - car: PRR-12345
@@ -55,3 +55,28 @@ cards:
 
   - car: PRR-75340
     waybill: deadhead-1       # DEADHEAD combine PGH → ALT
+
+  # Page 3
+  - car: PRR-12345
+    waybill: stopoff-1        # STOP OFF at Mifflin
+
+  - car: PRR-67890
+    waybill: stopoff-2        # STOP OFF at Lewistown
+
+  - car: PRR-47823
+    waybill: temp-1           # TEMPORARY (Form 704) steel billets
+
+  - car: PRR-52167
+    waybill: temp-2           # TEMPORARY (Form 704) agricultural lime
+
+  - car: NYC-158923
+    waybill: perishable-1     # PERISHABLE cantaloupes to Willimantic
+
+  - car: PRR-61044
+    waybill: perishable-2     # PERISHABLE produce to Portland
+
+  - car: PRR-100432
+    waybill: livestock-1      # LIVESTOCK steers to Northfield
+
+  - car: PRR-155789
+    waybill: livestock-2      # LIVESTOCK hogs to Harrisburg

@@ -269,3 +269,118 @@
   from_location_id: MIF
   shop_location_id: ALT
   defect: Cracked center sill - shop inspection required
+
+# ── STOP OFF ─────────────────────────────────────────────────────────────────
+
+- id: stopoff-1
+  waybill_type: STOP_OFF
+  originating_railroad_id: PRR
+  at_location: Mifflin PA
+  for_reason: Partial unloading. Continue to Harrisburg.
+  contents: LCL
+  waybilled_from: Pittsburgh PA
+  notes: Protect from freezing
+
+- id: stopoff-2
+  waybill_type: STOP_OFF
+  originating_railroad_id: PRR
+  at_location: Lewistown PA
+  for_reason: Complete loading. Continue to Enola.
+  contents: LCL
+  waybilled_from: Altoona PA
+
+# ── TEMPORARY (SP Form 704 / Conductor's Memorandum Waybill) ─────────────────
+
+- id: temp-1
+  waybill_type: TEMPORARY
+  originating_railroad_id: PRR
+  waybill_no: "46"
+  from_location_id: Burnham PA
+  to_location_id: Harrisburg PA
+  shipper_name: Standard Steel Works
+  consignee_address: PRR Harrisburg Freight House
+  commodity_desc: Steel billets, boxed
+  routing: PRR
+  weight: "36,200"
+  amount_collected: "112.40"
+
+- id: temp-2
+  waybill_type: TEMPORARY
+  originating_railroad_id: PRR
+  waybill_no: "51"
+  from_location_id: McVeytown PA
+  to_location_id: Lewistown PA
+  shipper_name: McVeytown Limestone Quarry
+  consignee_address: Lewistown Grain Elevator
+  commodity_desc: Agricultural lime, bulk
+  routing: PRR
+
+# ── PERISHABLE ────────────────────────────────────────────────────────────────
+
+- id: perishable-1
+  waybill_type: PERISHABLE
+  originating_railroad_id: PRR
+  commodity_id: produce
+  shipper_name: Westside Produce Co.
+  consignee_name: M. Foster, Frt. House
+  to_city: Willimantic
+  to_state: CT
+  from_city: Mifflin
+  from_state: PA
+  routing: [PRR, NYC, NH]
+  stop_at: New Haven CT
+  icing_instructions: Re-ice at each stop per shipper instructions
+  pre_ice: "YES"
+  initial_ice: "YES"
+
+- id: perishable-2
+  waybill_type: PERISHABLE
+  originating_railroad_id: PRR
+  commodity_id: produce
+  shipper_name: Mifflin Grain Co.
+  consignee_name: Blue Shield Foods
+  to_city: Portland
+  to_state: OR
+  from_city: Lewistown
+  from_state: PA
+  routing: [PRR, NYC, WAB, UP]
+  reconsigned_to: Seattle WA
+  weighed_note: Shipper Load & Weigh
+
+# ── LIVESTOCK ─────────────────────────────────────────────────────────────────
+
+- id: livestock-1
+  waybill_type: LIVESTOCK
+  originating_railroad_id: PRR
+  description_of_stock: Steers
+  no_head: "36"
+  shipper_name: Nebraska Cattlemen's Association
+  consignee_name: Berkshire Custom Meats, Yard 2
+  to_city: Northfield
+  to_state: MA
+  from_city: Burnham
+  from_state: PA
+  routing: [PRR, NYC, B&M]
+  attendant_in_charge: true
+  car_bedded_by_carrier: false
+  bedding_furnished_by_carrier: true
+  hour_request_signed: true
+  time_loaded: "7:25 AM"
+  feeding_place: Altoona PA
+
+- id: livestock-2
+  waybill_type: LIVESTOCK
+  originating_railroad_id: PRR
+  description_of_stock: Hogs
+  no_head: "84"
+  shipper_name: Mifflin County Stockyards
+  consignee_name: Harrisburg Packing Co.
+  to_city: Harrisburg
+  to_state: PA
+  from_city: Mifflin
+  from_state: PA
+  routing: [PRR]
+  attendant_in_charge: false
+  car_bedded_by_carrier: true
+  bedding_furnished_by_carrier: false
+  hour_request_signed: false

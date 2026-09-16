@@ -8,6 +8,7 @@ from waybill_generator.models.waybill import (
     WaybillBase, WaybillType,
     LoadedWaybill, EmptyWaybill, DeadheadWaybill,
     MoWWaybill, HoldWaybill, BadOrderWaybill,
+    StopOffWaybill, TemporaryWaybill, PerishableWaybill, LivestockWaybill,
 )
 
 _PRR_TUSCAN = HexColor("#7B1113")
@@ -50,6 +51,10 @@ _BILL_TYPE_LABELS: dict[WaybillType, str] = {
     WaybillType.MOW: "M-O-W SERVICE BILL",
     WaybillType.HOLD: "HOLD ORDER",
     WaybillType.BAD_ORDER: "BAD ORDER CARD",
+    WaybillType.STOP_OFF: "STOP OFF",
+    WaybillType.TEMPORARY: "CONDUCTOR'S MEMO WAYBILL",
+    WaybillType.PERISHABLE: "PERISHABLE FREIGHT WAYBILL",
+    WaybillType.LIVESTOCK: "LIVE STOCK FREIGHT WAYBILL",
 }
 
 
@@ -138,8 +143,13 @@ class AkMainLayout(BaseLayout):
         canvas.setFont(self.railroad_name_font, 7)
         canvas.drawCentredString(x + w / 2, y + h - 15, railroad.name)
 
-        # Bill type -- large bold, dominant element
-        canvas.setFont(self.headline_font, 12)
+        # Bill type -- large bold, dominant element; shrink to fit for the
+        # longer titles (PERISHABLE FREIGHT WAYBILL, etc).
+        from reportlab.pdfbase.pdfmetrics import stringWidth
+        headline_size = 12.0
+        while headline_size > 7 and stringWidth(bill_label, self.headline_font, headline_size) > w - 4:
+            headline_size -= 0.5
+        canvas.setFont(self.headline_font, headline_size)
         canvas.drawCentredString(x + w / 2, y + h - 28, bill_label)
 
         # Subtitle -- small, LOADED waybills only
@@ -226,6 +236,14 @@ class AkMainLayout(BaseLayout):
                 self._draw_hold(canvas, waybill, x, y, w, h)  # type: ignore[arg-type]
             case WaybillType.BAD_ORDER:
                 self._draw_bad_order(canvas, waybill, x, y, w, h)  # type: ignore[arg-type]
+            case WaybillType.STOP_OFF:
+                self._draw_stop_off(canvas, waybill, x, y, w, h)  # type: ignore[arg-type]
+            case WaybillType.TEMPORARY:
+                self._draw_temporary(canvas, waybill, x, y, w, h)  # type: ignore[arg-type]
+            case WaybillType.PERISHABLE:
+                self._draw_perishable(canvas, waybill, x, y, w, h)  # type: ignore[arg-type]
+            case WaybillType.LIVESTOCK:
+                self._draw_livestock(canvas, waybill, x, y, w, h)  # type: ignore[arg-type]
             case _:
                 raise ValueError(f"Unhandled waybill type: {waybill.waybill_type}")
 
@@ -666,3 +684,319 @@ class AkMainLayout(BaseLayout):
             self._label(canvas, "DEFECT", x, cursor)
             cursor -= 10
             self._value_wrap(canvas, w.defect, x + 2, cursor - 9, ww - 4, line_gap=2)
+
+    def _draw_stop_off(
+        self, canvas: Canvas, w: StopOffWaybill, x: float, y: float, ww: float, h: float
+    ) -> None:
+        cursor = y + h
+
+        label_top = cursor
+        rule_y = label_top - 18
+        self._label(canvas, "At", x, label_top, top_width=2.0)
+        label_bottom = self._label_bottom(label_top, top_width=2.0)
+        self._value_fit(canvas, w.at_location, x + 2, self._centered_value_baseline(label_bottom, rule_y), ww - 4)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        self._label(canvas, "For", x, label_top)
+        cursor -= 10
+        self._value_wrap(canvas, w.for_reason, x + 2, cursor - 9, ww - 4, line_gap=2)
+        cursor -= 18
+        self._rule(canvas, x, cursor, ww)
+
+        label_top = cursor
+        rule_y = label_top - 18
+        self._label(canvas, "Contents", x, label_top)
+        label_bottom = self._label_bottom(label_top)
+        self._value_fit(canvas, w.contents, x + 2, self._centered_value_baseline(label_bottom, rule_y), ww - 4)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        rule_y = label_top - 18
+        self._label(canvas, "Waybilled from", x, label_top)
+        label_bottom = self._label_bottom(label_top)
+        self._value_fit(canvas, w.waybilled_from, x + 2, self._centered_value_baseline(label_bottom, rule_y), ww - 4)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        self._label(canvas, "Instructions Regarding Icing, Ventilation, Milling, Weighing, Etc.", x, cursor)
+        if w.notes:
+            cursor -= 10
+            self._value_wrap(canvas, w.notes, x + 2, cursor - 9, ww - 4, line_gap=2)
+
+    def _draw_temporary(
+        self, canvas: Canvas, w: TemporaryWaybill, x: float, y: float, ww: float, h: float
+    ) -> None:
+        mid = x + ww / 2
+        col_w = mid - (x + 4)
+        cursor = y + h
+
+        self._label(canvas, "DATE", x, cursor, top_width=2.0)
+        self._label(canvas, "WAYBILL NO.", mid, cursor, top_width=2.0, left_width=0.4)
+        label_bottom = self._label_bottom(cursor, top_width=2.0)
+        self._value_fit(canvas, w.waybill_no, mid + 2, label_bottom - 9, ww / 2 - 4)
+        cursor -= 18
+        self._vcol(canvas, mid, cursor, 18)
+        self._rule(canvas, x, cursor, ww)
+
+        label_top = cursor
+        rule_y = label_top - 20
+        self._label(canvas, "FROM STATION, STATE", x, label_top)
+        self._label(canvas, "TO STATION, STATE", mid, label_top, left_width=0.4)
+        label_bottom = self._label_bottom(label_top)
+        value_y = self._centered_value_baseline(label_bottom, rule_y)
+        self._value_fit(canvas, w.from_location_id, x + 2, value_y, col_w)
+        self._value_fit(canvas, w.to_location_id, mid + 2, value_y, col_w)
+        self._vcol(canvas, mid, rule_y, label_top - rule_y)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        rule_y = label_top - 20
+        self._label(canvas, "FULL NAME OF SHIPPER", x, label_top)
+        label_bottom = self._label_bottom(label_top)
+        self._value_wrap(
+            canvas, w.shipper_name, x + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, w.shipper_name, ww - 4),
+            ww - 4,
+        )
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        rule_y = label_top - 20
+        self._label(canvas, "CONSIGNEE, ADDRESS (FINAL DEST.)", x, label_top)
+        label_bottom = self._label_bottom(label_top)
+        self._value_wrap(
+            canvas, w.consignee_address, x + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, w.consignee_address, ww - 4),
+            ww - 4,
+        )
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        self._label(canvas, "ROUTING", x, label_top)
+        if w.routing:
+            label_bottom = self._label_bottom(label_top)
+            self._value_fit(canvas, w.routing, x + 2, label_bottom - 9, ww - 4)
+        cursor -= 18
+        self._rule(canvas, x, cursor, ww)
+
+        weight_col = x + ww * 0.55
+        amt_col = x + ww * 0.78
+        self._label(canvas, "DESCRIPTION OF ARTICLES", x, cursor)
+        self._label(canvas, "WEIGHT", weight_col, cursor, left_width=0.4)
+        self._label(canvas, "AMOUNT COLLECTED", amt_col, cursor, left_width=0.4)
+        table_top = cursor
+        cursor -= 22
+        self._vcol(canvas, weight_col, cursor, 22)
+        self._vcol(canvas, amt_col, cursor, 22)
+        self._rule(canvas, x, cursor, ww)
+        label_bottom = self._label_bottom(table_top)
+        value_y = self._centered_value_baseline(label_bottom, cursor)
+        self._value_fit(canvas, w.commodity_desc, x + 2, value_y, weight_col - x - 4)
+        if w.weight:
+            self._value_fit(canvas, w.weight, weight_col + 2, value_y, amt_col - weight_col - 4)
+        if w.amount_collected:
+            self._value_fit(canvas, w.amount_collected, amt_col + 2, value_y, x + ww - amt_col - 4)
+
+    def _draw_perishable(
+        self, canvas: Canvas, w: PerishableWaybill, x: float, y: float, ww: float, h: float
+    ) -> None:
+        mid = x + ww / 2
+        col_w = mid - (x + 4)
+        cursor = y + h
+
+        to_val = f"{w.to_city}, {w.to_state}"
+        from_val = f"{w.from_city}, {w.from_state}"
+        label_top = cursor
+        rule_y = label_top - 30
+        self._label(canvas, "TO STATION, STATE", x, label_top, top_width=2.0)
+        self._label(canvas, "FROM STATION, STATE", mid, label_top, top_width=2.0, left_width=0.4)
+        label_bottom = self._label_bottom(label_top, top_width=2.0)
+        self._value_wrap(
+            canvas, to_val, x + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, to_val, col_w, line_gap=2),
+            col_w, line_gap=2,
+        )
+        self._value_wrap(
+            canvas, from_val, mid + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, from_val, col_w, line_gap=2),
+            col_w, line_gap=2,
+        )
+        self._vcol(canvas, mid, rule_y, label_top - rule_y)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        rule_y = label_top - 28
+        self._label(canvas, "CONSIGNEE AND ADDRESS", x, label_top)
+        self._label(canvas, "SHIPPER", mid, label_top, left_width=0.4)
+        label_bottom = self._label_bottom(label_top)
+        self._value_wrap(
+            canvas, w.consignee_name, x + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, w.consignee_name, col_w),
+            col_w,
+        )
+        self._value_wrap(
+            canvas, w.shipper_name, mid + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, w.shipper_name, col_w),
+            col_w,
+        )
+        self._vcol(canvas, mid, rule_y, label_top - rule_y)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        rule_y = label_top - 18
+        self._label(canvas, "RECONSIGNED TO", x, label_top)
+        self._label(canvas, "STOP THIS CAR AT", mid, label_top, left_width=0.4)
+        label_bottom = self._label_bottom(label_top)
+        value_y = self._centered_value_baseline(label_bottom, rule_y)
+        if w.reconsigned_to:
+            self._value_fit(canvas, w.reconsigned_to, x + 2, value_y, col_w)
+        if w.stop_at:
+            self._value_fit(canvas, w.stop_at, mid + 2, value_y, col_w)
+        self._vcol(canvas, mid, rule_y, label_top - rule_y)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        rule_y = label_top - 18
+        self._label(canvas, "ROUTE Show in route order", x, label_top)
+        self._label(canvas, "WEIGHED", mid, label_top, left_width=0.4)
+        label_bottom = self._label_bottom(label_top)
+        value_y = self._centered_value_baseline(label_bottom, rule_y)
+        if w.routing:
+            self._value_fit(canvas, " - ".join(w.routing), x + 2, value_y, col_w)
+        if w.weighed_note:
+            self._value_fit(canvas, w.weighed_note, mid + 2, value_y, col_w)
+        self._vcol(canvas, mid, rule_y, label_top - rule_y)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        self._label(
+            canvas, "ON C.L. TRAFFIC-INSTRUCTIONS (Icing, Ventilation, Heating, Milling, Weighing)",
+            x, cursor,
+        )
+        if w.icing_instructions:
+            label_bottom = self._label_bottom(cursor)
+            self._value_fit(canvas, w.icing_instructions, x + 2, label_bottom - 9, ww - 4)
+        cursor -= 18
+        self._rule(canvas, x, cursor, ww)
+
+        self._label(canvas, "PRE-ICE", x, cursor)
+        self._label(canvas, "INITIAL ICE", mid, cursor, left_width=0.4)
+        if w.pre_ice:
+            self._value_fit(canvas, w.pre_ice, x + 2, self._label_bottom(cursor) - 9, col_w)
+        if w.initial_ice:
+            self._value_fit(canvas, w.initial_ice, mid + 2, self._label_bottom(cursor) - 9, col_w)
+        cursor -= 18
+        self._vcol(canvas, mid, cursor, 18)
+        self._rule(canvas, x, cursor, ww)
+
+        pkgs_col = x + 32
+        self._label(canvas, "NO. PKGS.", x, cursor)
+        self._label(canvas, "DESCRIPTION OF ARTICLES", pkgs_col, cursor)
+        cursor -= 10
+        self._value_fit(canvas, w.commodity_id, pkgs_col + 3, cursor - 9, x + ww - pkgs_col - 5)
+
+    def _draw_livestock(
+        self, canvas: Canvas, w: LivestockWaybill, x: float, y: float, ww: float, h: float
+    ) -> None:
+        mid = x + ww / 2
+        col_w = mid - (x + 4)
+        cursor = y + h
+
+        to_val = f"{w.to_city}, {w.to_state}"
+        from_val = f"{w.from_city}, {w.from_state}"
+        label_top = cursor
+        rule_y = label_top - 28
+        self._label(canvas, "TO STATION, STATE", x, label_top, top_width=2.0)
+        self._label(canvas, "FROM STATION, STATE", mid, label_top, top_width=2.0, left_width=0.4)
+        label_bottom = self._label_bottom(label_top, top_width=2.0)
+        self._value_wrap(
+            canvas, to_val, x + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, to_val, col_w, line_gap=2),
+            col_w, line_gap=2,
+        )
+        self._value_wrap(
+            canvas, from_val, mid + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, from_val, col_w, line_gap=2),
+            col_w, line_gap=2,
+        )
+        self._vcol(canvas, mid, rule_y, label_top - rule_y)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        rule_y = label_top - 26
+        self._label(canvas, "CONSIGNEE AND ADDRESS", x, label_top)
+        self._label(canvas, "SHIPPER", mid, label_top, left_width=0.4)
+        label_bottom = self._label_bottom(label_top)
+        self._value_wrap(
+            canvas, w.consignee_name, x + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, w.consignee_name, col_w),
+            col_w,
+        )
+        self._value_wrap(
+            canvas, w.shipper_name, mid + 2,
+            self._centered_wrap_baseline(label_bottom, rule_y, w.shipper_name, col_w),
+            col_w,
+        )
+        self._vcol(canvas, mid, rule_y, label_top - rule_y)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        label_top = cursor
+        rule_y = label_top - 18
+        self._label(canvas, "NO. HEAD", x, label_top)
+        self._label(canvas, "DESCRIPTION OF STOCK", mid, label_top, left_width=0.4)
+        label_bottom = self._label_bottom(label_top)
+        value_y = self._centered_value_baseline(label_bottom, rule_y)
+        self._value_fit(canvas, w.no_head, x + 2, value_y, col_w)
+        self._value_fit(canvas, w.description_of_stock, mid + 2, value_y, col_w)
+        self._vcol(canvas, mid, rule_y, label_top - rule_y)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        def _yes_no(value: bool) -> str:
+            return "YES" if value else "NO"
+
+        questions = [
+            ("Attendant in Charge?", _yes_no(w.attendant_in_charge)),
+            ("Car Bedded by Carrier?", _yes_no(w.car_bedded_by_carrier)),
+            ("Bedding Furnished by Carrier?", _yes_no(w.bedding_furnished_by_carrier)),
+            ("36 Hr. Request Signed?", _yes_no(w.hour_request_signed)),
+        ]
+        q_top = cursor - 8
+        q_gap = 8.0
+        canvas.setFont(self.label_font, self._LABEL_SIZE)
+        for i, (question, answer) in enumerate(questions):
+            row_y = q_top - i * q_gap
+            canvas.setFont(self.label_font, self._LABEL_SIZE)
+            canvas.setFillColor(black)
+            canvas.drawString(x + 2, row_y, question)
+            self._value_fit(canvas, answer, x + ww - 24, row_y, 22)
+        cursor = q_top - len(questions) * q_gap - 4
+        self._rule(canvas, x, cursor, ww)
+
+        label_top = cursor
+        rule_y = label_top - 18
+        self._label(canvas, "STOP THIS CAR AT", x, label_top)
+        self._label(canvas, "TIME LOADED", mid, label_top, left_width=0.4)
+        label_bottom = self._label_bottom(label_top)
+        if w.stop_at:
+            self._value_fit(canvas, w.stop_at, x + 2, label_bottom - 9, col_w)
+        if w.time_loaded:
+            self._value_fit(canvas, w.time_loaded, mid + 2, label_bottom - 9, col_w)
+        self._vcol(canvas, mid, rule_y, label_top - rule_y)
+        self._rule(canvas, x, rule_y, ww)
+        cursor = rule_y
+
+        self._label(canvas, "FEEDING AND REST RECORD - PLACE", x, cursor)
+        if w.feeding_place:
+            self._value_fit(canvas, w.feeding_place, x + 2, cursor - 17, ww - 4)
