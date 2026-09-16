@@ -1,6 +1,6 @@
 from pathlib import Path
 from waybill_generator.renderer.pdf import render_pdf
-from waybill_generator.layouts.modelling_the_sp import ModellingTheSpLayout
+from waybill_generator.layouts.ak_main import AkMainLayout
 from waybill_generator.models.car import Car
 from waybill_generator.models.railroad import Railroad
 from waybill_generator.models.waybill import LoadedWaybill, EmptyWaybill
@@ -16,26 +16,26 @@ EMPTY = EmptyWaybill(id="e-1", originating_railroad_id="PRR",
 
 def test_render_creates_pdf(tmp_path):
     out = tmp_path / "test.pdf"
-    render_pdf([(CAR_A, LOADED, RR)], ModellingTheSpLayout(), out)
+    render_pdf([(CAR_A, LOADED, RR)], AkMainLayout(), out)
     assert out.exists()
     assert out.stat().st_size > 0
 
 
 def test_render_pdf_header(tmp_path):
     out = tmp_path / "test.pdf"
-    render_pdf([(CAR_A, LOADED, RR)], ModellingTheSpLayout(), out)
+    render_pdf([(CAR_A, LOADED, RR)], AkMainLayout(), out)
     assert out.read_bytes()[:4] == b"%PDF"
 
 
 def test_render_multiple_triples(tmp_path):
     out = tmp_path / "multi.pdf"
     triples = [(CAR_A, LOADED, RR), (CAR_B, EMPTY, RR)] * 5  # 10 cards = 2 pages
-    render_pdf(triples, ModellingTheSpLayout(), out)
+    render_pdf(triples, AkMainLayout(), out)
     assert out.exists()
     assert out.stat().st_size > 1000
 
 
 def test_render_empty_list(tmp_path):
     out = tmp_path / "empty.pdf"
-    render_pdf([], ModellingTheSpLayout(), out)
+    render_pdf([], AkMainLayout(), out)
     assert out.exists()

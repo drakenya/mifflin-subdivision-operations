@@ -89,7 +89,7 @@ def _register_headline_font() -> None:
         pdfmetrics.registerFont(TTFont(_HEADLINE_FONT, str(_HEADLINE_FONT_FILE)))
 
 
-class ModellingTheSpLayout(BaseLayout):
+class AkMainLayout(BaseLayout):
     value_font: str = _TYPEWRITER_FONT
     label_font: str = _LABEL_FONT
     railroad_name_font: str = _RAILROAD_NAME_FONT

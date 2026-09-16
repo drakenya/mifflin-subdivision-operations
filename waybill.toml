@@ -1,5 +1,5 @@
 [defaults]
-layout = "modelling_the_sp"
+layout = "ak_main"
 data_source = "yaml"
 data_path = "./data"
 output_dir = "./output"

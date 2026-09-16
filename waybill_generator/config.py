@@ -6,7 +6,7 @@ from pathlib import Path
 
 @dataclass
 class Config:
-    layout: str = "modelling_the_sp"
+    layout: str = "ak_main"
     data_source: str = "yaml"
     data_path: str = "./data"
     output_dir: str = "./output"

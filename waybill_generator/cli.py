@@ -5,13 +5,13 @@ import click
 from waybill_generator.config import load_config
 from waybill_generator.repository.yaml_repo import YamlRepository
 from waybill_generator.repository.catalog_repo import CatalogRepository
-from waybill_generator.layouts.modelling_the_sp import ModellingTheSpLayout
+from waybill_generator.layouts.ak_main import AkMainLayout
 from waybill_generator.layouts.experimental_1 import Experimental1Layout
 from waybill_generator.models.waybill import LoadedWaybill
 from waybill_generator.renderer.pdf import render_pdf
 
 _LAYOUTS = {
-    "modelling_the_sp": ModellingTheSpLayout,
+    "ak_main": AkMainLayout,
     "experimental_1": Experimental1Layout,
 }
 
