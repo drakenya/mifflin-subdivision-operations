@@ -466,3 +466,26 @@ def convert_industry_db(industry_db):
                 f"{filepath.name}: {len(rows)} rows parsed, {len(groups)} industries grouped, "
                 f"{skipped} rows skipped -> {out_path}"
             )
+
+
+@main.command()
+@click.option("--port", default=8000, show_default=True, type=int, help="Port to listen on")
+@click.option("--open", "open_browser", is_flag=True, help="Open the UI in your browser")
+@click.pass_context
+def serve(ctx, port, open_browser):
+    """Run the local web UI for editing data (binds 127.0.0.1 only)."""
+    import uvicorn
+
+    from waybill_generator.web.app import create_app
+    from waybill_generator.web.working_copy import DataError
+
+    try:
+        app = create_app(ctx.obj["data_path"])
+    except DataError as exc:
+        raise click.ClickException(f"Cannot load data from {ctx.obj['data_path']}: {exc}") from exc
+    url = f"http://127.0.0.1:{port}"
+    click.echo(f"Serving {url}  (Ctrl+C to stop)")
+    if open_browser:
+        import webbrowser
+        webbrowser.open(url)
+    uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")

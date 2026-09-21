@@ -20,6 +20,21 @@ Edit files in `data/` to define your roster:
 - `data/commodities.yaml` — freight types
 - `data/waybills.yaml` — waybill definitions
 
+## Web UI (editing data)
+
+Prefer forms to hand-editing YAML? Start the local UI:
+
+```bash
+uv run waybill serve            # http://127.0.0.1:8000  (add --open to launch a browser)
+```
+
+Every reference field (commodity, shipper, consignee, locations, …) is a type-to-search dropdown,
+and industries that ship or receive the chosen commodity are listed first. Edits are staged in
+memory — the header shows how many are unsaved. **Review & Save** shows a diff of exactly what will
+change in each YAML file (nothing else is touched, including your comments) and writes it when you
+say so; **Discard** throws staged edits away. If a file changed on disk while you were editing, you
+are asked whether to reload it or overwrite it.
+
 ## Printing Cards
 
 1. Create a session file listing which car gets which waybill:

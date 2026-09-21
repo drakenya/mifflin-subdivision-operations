@@ -9,3 +9,5 @@ output/
 
 industry_database/
 
+# Local scratch from Claude Code brainstorming / subagent runs
+.superpowers/

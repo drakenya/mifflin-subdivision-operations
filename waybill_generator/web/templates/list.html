@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ entity.title }} · Mifflin Ops{% endblock %}
+{% block content %}
+<h1>{{ entity.title }}</h1>
+<form method="get" class="row">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search {{ entity.title | lower }}…" class="grow">
+  {% if type_choices %}
+    <select name="type">
+      <option value="">All types</option>
+      {% for t in type_choices %}<option value="{{ t }}" {{ 'selected' if t == type else '' }}>{{ t }}</option>{% endfor %}
+    </select>
+  {% endif %}
+  <button class="btn">Filter</button>
+  <a class="btn pri" href="/{{ entity.kind }}/new">+ New {{ entity.noun }}</a>
+</form>
+<table>
+  <thead><tr>{% for _, header in entity.columns %}<th>{{ header }}</th>{% endfor %}<th></th></tr></thead>
+  <tbody>
+  {% for row in rows %}
+    <tr class="{{ row.status or '' }}">
+      {% for value in row.cells %}
+        <td>{% if loop.first %}<a href="/{{ entity.kind }}/{{ row.id }}">{{ value }}</a>{% else %}{{ value }}{% endif %}</td>
+      {% endfor %}
+      <td>{% if row.status %}<span class="tag {{ row.status }}">{{ row.status | upper }}</span>{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="{{ entity.columns | length + 1 }}" class="muted">No matches.</td></tr>
+  {% endfor %}
+  {% for rid in deleted %}
+    <tr class="deleted"><td>{{ rid }}</td><td colspan="{{ entity.columns | length - 1 }}"></td><td><span class="tag deleted">DELETED</span></td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p class="muted">{{ rows | length }} shown of {{ total }} · click an ID to edit</p>
+{% endblock %}

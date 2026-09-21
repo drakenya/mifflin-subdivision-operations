@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}{{ heading }} · Mifflin Ops{% endblock %}
+{% block content %}
+<h1>{{ heading }}</h1>
+<form method="post" action="{{ action }}" class="card">
+  {% if type_choices %}
+    {% if is_new %}
+      <div class="field">
+        <label for="f-{{ type_field }}">Type</label>
+        <select id="f-{{ type_field }}" name="{{ type_field }}"
+                hx-get="/{{ kind }}/fields" hx-target="#fields" hx-include="closest form" hx-trigger="change">
+          {% for t in type_choices %}<option value="{{ t }}" {{ 'selected' if t == type_value else '' }}>{{ t }}</option>{% endfor %}
+        </select>
+        <div class="hint">Changing the type swaps the fields below.</div>
+      </div>
+    {% else %}
+      <input type="hidden" name="{{ type_field }}" value="{{ type_value }}">
+      <p><span class="tag">{{ type_value }}</span></p>
+    {% endif %}
+  {% endif %}
+  <div id="fields" class="grid">{% include "_fields.html" %}</div>
+  <div class="row">
+    <button class="btn pri">Apply</button>
+    <a class="btn" href="{{ cancel_url }}">Cancel</a>
+    <span class="spacer"></span>
+    {% if delete_url %}<button class="btn danger" formaction="{{ delete_url }}" formnovalidate>Delete</button>{% endif %}
+  </div>
+</form>
+{% if industries is defined %}
+  <h2>Industries</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Name</th><th>Track</th><th>Cap.</th><th>Ships</th><th>Receives</th></tr></thead>
+    <tbody>
+    {% for i in industries %}
+      <tr>
+        <td><a href="/locations/{{ record_id }}/industries/{{ i.id }}">{{ i.id }}</a></td>
+        <td>{{ i.name }}</td><td>{{ i.track or '' }}</td><td>{{ i.car_capacity or '' }}</td>
+        <td>{{ i.ships | join(', ') }}</td><td>{{ i.receives | join(', ') }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="muted">No industries yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p><a class="btn" href="{{ action }}/industries/new">+ Add industry</a></p>
+{% elif kind == "locations" and not delete_url %}
+  <p class="muted">Apply this location first, then add its industries.</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Mifflin Ops{% endblock %}</title>
+  <link rel="stylesheet" href="/static/tom-select.default.min.css">
+  <link rel="stylesheet" href="/static/app.css">
+  <script src="/static/htmx.min.js"></script>
+  <script src="/static/tom-select.complete.min.js"></script>
+  <script src="/static/pickers.js" defer></script>
+  <script src="/static/ids.js" defer></script>
+</head>
+<body>
+<header class="bar">
+  <span class="brand">🚂 Mifflin Ops</span>
+  <nav>
+    {% for e in entities %}<a href="/{{ e.kind }}" class="{{ 'on' if e.kind == active else '' }}">{{ e.title }}</a>{% endfor %}
+  </nav>
+  <span class="spacer"></span>
+  {% if change_count %}
+    <span class="dirty">{{ change_count }} unsaved change{{ '' if change_count == 1 else 's' }}</span>
+    <a class="btn pri" href="/review">Review &amp; Save</a>
+    <form method="post" action="/discard" class="inline" onsubmit="return confirm('Discard all unsaved changes?')">
+      <button class="btn">Discard</button>
+    </form>
+  {% endif %}
+</header>
+{% if flash %}<div class="flash">{{ flash }}</div>{% endif %}
+<main>{% block content %}{% endblock %}</main>
+</body>
+</html>

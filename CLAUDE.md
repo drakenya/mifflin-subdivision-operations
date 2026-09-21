@@ -31,6 +31,7 @@ uv run waybill validate                         # check data files
 uv run waybill generate --session session.yaml  # produce PDF
 uv run waybill list cars
 uv run waybill list waybills [--type LOADED]
+uv run waybill serve [--port 8000] [--open]   # local web UI: edit data, review diff, save to YAML
 uv run waybill convert-industry-db                # convert opsig/jbritton source files to JSON
 uv run pytest                                   # run tests
 uv run ruff check .                             # lint
@@ -52,6 +53,21 @@ Then open `http://localhost:8000/tools/industry-browser.html`.
 The list of source files the page loads is hardcoded in its `SOURCE_FILES`
 constant and needs a manual update if `convert-industry-db`'s source file
 set ever changes.
+
+## Web UI
+`uv run waybill serve` runs a local web UI (binds 127.0.0.1) for creating, editing, and deleting
+cars, waybills, locations (with industries), commodities, and railroads. Edits are **staged in
+memory**; nothing is written until **Review & Save → Save to YAML**, which splices only the changed
+records into `data/*.yaml` (comments, section headers, and untouched records stay byte-identical).
+References already broken on disk are warnings; only newly broken references block saving.
+Code lives in `waybill_generator/web/` (`YamlFile` → `WorkingCopy` → FastAPI routes + Jinja2/htmx
+templates; htmx and Tom Select are vendored in `web/static/`). Spec:
+`docs/superpowers/specs/2026-09-20-web-ui-design.md`. Phase 2 (card preview, session builder) is
+not built yet.
+A new record's id is generated for you (shown locked; it follows the fields it is derived from) —
+click Edit to type your own. Ids can't be renamed afterwards. Record ids must be URL-safe (letters,
+digits, `.`, `_`, `&`, `-`; not `new`/`fields`/`suggest-id`), and after hand-editing
+`data/aar_codes.yaml` use Discard/Reload (no restart needed).
 
 ## Design Decisions
 - YAML first; SQLite backend planned once schema stabilises

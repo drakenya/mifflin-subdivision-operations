@@ -1,0 +1,43 @@
+{% macro render_field(f) %}
+<div class="field{{ ' has-error' if f.error else '' }}{{ ' wide' if f.kind in ('textarea', 'tags') else '' }}">
+  <label for="f-{{ f.name }}">{{ f.label }}{% if f.required %} *{% endif %}</label>
+  {% if f.kind == "textarea" %}
+    <textarea id="f-{{ f.name }}" name="{{ f.name }}" rows="3">{{ f.value or "" }}</textarea>
+  {% elif f.kind == "checkbox" %}
+    <input type="checkbox" id="f-{{ f.name }}" name="{{ f.name }}" {{ 'checked' if f.value else '' }}>
+  {% elif f.kind in ("select", "multiselect", "tags") %}
+    <select id="f-{{ f.name }}" name="{{ f.name }}" data-picker placeholder="Search…"
+            {{ 'multiple' if f.kind != 'select' else '' }}
+            {% if f.kind == "tags" %}data-create="1"{% endif %}
+            {% if f.rank %}data-rank-field="{{ f.rank[0] }}" data-rank-list="{{ f.rank[1] }}"{% endif %}>
+      {% if f.kind == "select" %}<option value=""></option>{% endif %}
+      {% for o in f.options %}
+        <option value="{{ o.value }}" data-meta="{{ o.meta }}" data-ships="{{ o.ships or '' }}" data-receives="{{ o.receives or '' }}"
+                {{ 'selected' if o.value in f.selected else '' }}>{{ o.text }}</option>
+      {% endfor %}
+    </select>
+  {% elif f.name == "id" and id_mode is defined %}
+    <div class="id-row" data-id-field{% if id_suggest_url %} data-suggest-url="{{ id_suggest_url }}"{% endif %}>
+      <input type="text" id="f-id" name="id" value="{{ '' if f.value is none else f.value }}"
+             {% if id_mode != 'manual' %}readonly class="locked"{% endif %}>
+      {% if id_mode == "fixed" %}
+        <span class="lock" title="Ids can't be renamed">🔒</span>
+      {% else %}
+        <input type="hidden" id="f-id_manual" name="id_manual" value="{{ '1' if id_mode == 'manual' else '0' }}">
+        <button type="button" class="btn id-toggle">{{ '↺ Auto' if id_mode == 'manual' else '✎ Edit' }}</button>
+      {% endif %}
+    </div>
+    <div class="hint" data-id-hint data-hint-locked="Generated from the other fields — click Edit to type your own."
+         data-hint-manual="Typing your own id — click Auto to generate it again.">
+      {% if id_mode == "fixed" %}Ids can't be renamed — other records refer to them.
+      {% elif id_mode == "manual" %}Typing your own id — click Auto to generate it again.
+      {% else %}Generated from the other fields — click Edit to type your own.{% endif %}
+    </div>
+  {% else %}
+    <input type="{{ 'number' if f.kind == 'number' else 'text' }}" id="f-{{ f.name }}" name="{{ f.name }}"
+           value="{{ '' if f.value is none else f.value }}" {{ 'readonly' if f.readonly else '' }}>
+  {% endif %}
+  {% if f.error %}<div class="hint err">{{ f.error }}</div>{% endif %}
+</div>
+{% endmacro %}
+{% for f in fields %}{{ render_field(f) }}{% endfor %}

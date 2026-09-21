@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Review &amp; Save · Mifflin Ops{% endblock %}
+{% block content %}
+<h1>Review &amp; Save</h1>
+{% if not diffs %}
+  <p class="muted">No unsaved changes.</p>
+{% else %}
+  {% if validation.blocking %}
+    <div class="banner err"><b>Can't save — these broken references are new:</b>
+      <ul>{% for r in validation.blocking %}<li>{{ r.describe() }} → no such {{ r.target | replace('_', ' ') | replace('ies', 'y') | replace('ses', 's') }} “{{ r.value }}”</li>{% endfor %}</ul>
+    </div>
+  {% else %}
+    <div class="banner ok">✓ No new broken references.</div>
+  {% endif %}
+  {% if conflicts %}
+    <div class="banner warn">⚠ Changed on disk since it was loaded: <b>{{ conflicts | join(', ') }}</b>
+      {% for d in diffs if d.filename in conflicts %}
+        <form method="post" action="/reload/{{ d.kind }}" class="inline"><button class="btn">Reload {{ d.filename }} from disk</button></form>
+      {% endfor %}
+    </div>
+  {% endif %}
+  {% for d in diffs %}
+    <div class="diff">
+      <div class="h">data/{{ d.filename }}</div>
+      {% for line in d.diff.splitlines() %}
+        {% if loop.index > 2 %}
+        <div class="l {{ 'a' if line.startswith('+') else 'd' if line.startswith('-') else 'c' }}">{{ line }}</div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endfor %}
+  <form method="post" action="/save" class="row">
+    <button class="btn pri" {{ 'disabled' if validation.blocking else '' }}>Save {{ diffs | length }} file{{ '' if diffs | length == 1 else 's' }} to YAML</button>
+    {% if conflicts %}<label><input type="checkbox" name="overwrite"> Overwrite the changed-on-disk file(s) anyway</label>{% endif %}
+    <a class="btn" href="/">Back</a>
+  </form>
+{% endif %}
+{% if validation.existing %}
+  <details>
+    <summary>{{ validation.existing | length }} pre-existing broken reference{{ '' if validation.existing | length == 1 else 's' }} (already in your files; not blocking)</summary>
+    <ul>{% for r in validation.existing %}<li>{{ r.describe() }} → “{{ r.value }}” not found in {{ r.target }}</li>{% endfor %}</ul>
+  </details>
+{% endif %}
+{% endblock %}
