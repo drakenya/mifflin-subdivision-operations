@@ -41,7 +41,9 @@ Searchable dropdowns use Tom Select (vanilla JS). htmx and Tom Select
 are vendored into `waybill_generator/web/static/` so the tool works
 offline. New dependencies (added to the main `dependencies`, matching
 how `openpyxl`/`xlrd` are handled): `fastapi`, `uvicorn`, `jinja2`,
-`python-multipart`, `ruamel.yaml`. Dev: `httpx` (for `TestClient`).
+`python-multipart` (PyYAML is already a dependency). Dev: `httpx2` (the
+HTTP client Starlette's `TestClient` now expects; `httpx` triggers a
+deprecation warning).
 
 Considered and rejected: JSON API + client-side SPA (validation in two
 places), NiceGUI (less layout/preview control, heavier dependencies),
@@ -62,14 +64,34 @@ extraction in phase 2.
 
 ### `YamlStore`
 
-Round-trip read/write of each data file with `ruamel.yaml`, preserving
-comments and formatting. Records each file's content hash at load time.
-Can produce a unified diff between the working copy and the on-disk
-text. Saving **merges** changes into the round-tripped document
-(update changed entries, append new, remove deleted) rather than
-re-dumping, so untouched entries and comments stay byte-identical and
-`git diff` shows only what changed. Writes go to temp files first, then
-are renamed into place.
+Minimal-diff read/write of each data file using PyYAML plus text
+splicing. (`ruamel.yaml` was evaluated and rejected: the data files
+indent nested lists under their key while top-level records start at
+column 0, which `ruamel`'s single global indent setting can't express, so
+it rewrites every nested list in the file.)
+
+Each file is split into a header, then per-record text bodies separated
+by *gaps* (blank lines and column-0 comments, where section headers such
+as `# ── LOADED ──` live). Saving rewrites only the records that changed:
+
+- an untouched record's text is kept byte-for-byte, as are all gaps;
+- an edited record keeps the original text of every key whose value did
+  not change (flow-style lists like `routing: [PRR, NYC]`, odd quoting,
+  and an indented comment above a key all survive); only changed keys
+  are re-emitted, in house style (nested lists indented under their key,
+  numeric-looking strings double-quoted);
+- new records are inserted after the last record of the same group (for
+  waybills, the same `waybill_type`, so they land in their section),
+  otherwise appended; deleted records are removed without touching
+  section-header comments;
+- if a record's layout is not recognised, that record alone falls back
+  to a full re-emit (any in-record comments on it are lost).
+
+The merged result is parse-checked against the intended record before
+it is accepted. Each file's content hash is recorded at load time for
+the save-time conflict check. Writes go to temp files first, then are
+renamed into place. A file that is not a top-level list of `id`-bearing
+mappings is rejected at load with a clear error.
 
 ### `WorkingCopy`
 
@@ -83,16 +105,28 @@ renderer and resolve code work on it unchanged. Adds:
   new/modified/deleted state)
 - reference-integrity checks: deleting a record that others reference
   is blocked and returns the list of referencing records
-- `validate()`: the same cross-reference checks as `waybill validate`,
-  shared rather than duplicated
+- `validate()`: cross-reference checks that are **new** (the existing
+  `waybill validate` only checks that files load and match the models).
+  The data has legitimate loose references, so the checks are scoped and
+  relative to a baseline:
+  - only fields in an explicit reference table are checked (`routing`
+    lists hold free-form junction/railroad codes, and TEMPORARY
+    waybills' locations are free text, so neither is checked);
+  - references already broken in the files on disk when loaded (today:
+    `commodity_id: produce` on the two perishable waybills) are the
+    *baseline*: reported as non-blocking warnings;
+  - only references broken by staged edits block saving.
 
 ### Form generation
 
 One generic helper walks a Pydantic model's `model_fields` and emits
 inputs. A small explicit table maps reference fields to the collection
 they point at (e.g. `consignee_id` → industries, `commodity_id` →
-commodities, `routing` → railroads); those render as searchable
-pickers. Choosing a waybill type re-renders the field block for that
+commodities); those render as searchable pickers. `routing` lists
+are free-entry pickers that suggest locations and railroads. A value
+already in a record but missing from the data (a pre-existing broken
+reference) stays selectable, marked "not in data", so editing the record
+never silently drops it. Choosing a waybill type re-renders the field block for that
 type via htmx. Adding a waybill type to the model yields a working form
 without extra UI code; a parametrized test covers every type and fails
 if a reference field has no picker mapping.
@@ -132,7 +166,8 @@ purpose.
   helpers from `cli.py` for locations/industries.
 - **Locations:** the location form embeds an industries table
   (add/edit/remove); `ships`/`receives` are commodity multi-selects.
-- **Review & Save:** runs `validate()` (errors block saving); shows a
+- **Review & Save:** runs `validate()` (new broken references block
+  saving; pre-existing ones are listed as warnings); shows a
   per-file YAML diff; **Save to YAML** writes all changed files. If a
   file's hash differs from load time, a warning offers **Reload from
   disk** (re-reads that file, dropping its staged edits) or
@@ -168,7 +203,7 @@ behavior and tests are unchanged.
 - **Form input:** Pydantic `ValidationError` is mapped to fields and
   the form is re-rendered; nothing is applied until clean.
 - **Referential integrity:** blocked deletes list their referencers;
-  Save is blocked by `validate()` errors.
+  Save is blocked by *new* broken references only (see `validate()`).
 - **Startup:** a YAML file that fails to parse stops the server with
   the file and line; it never starts with an empty dataset.
 - **Save:** temp-file-then-rename; a failure before the renames leaves
@@ -181,19 +216,22 @@ behavior and tests are unchanged.
 
 pytest and ruff, against copies of `tests/fixtures`:
 
-- `YamlStore`: golden round-trip (comments and untouched entries
-  byte-identical after add/update/delete); conflict detection; temp
-  file cleanup on failure.
-- `WorkingCopy`: apply/delete, dirty tracking, reference blocking,
-  `BaseRepository` contract, `validate()`.
+- `YamlStore`: no-op render is byte-identical; edits change only the
+  edited lines (flow-style lists, quoting and comments on untouched keys
+  survive); grouped insertion, deletion that keeps section comments;
+  conflict detection; unsupported layouts rejected.
+- `WorkingCopy`: apply/delete, dirty tracking, reference blocking, the
+  baseline rule in `validate()`, `BaseRepository` contract, and staging
+  failures leaving the data untouched.
 - Form helper: parametrized over all waybill types, including the
   picker-mapping completeness check.
 - Routes (`TestClient`): list → edit → apply → review → save on a temp
   fixture copy; preview endpoint returns `application/pdf` (`%PDF`).
 - `resolve_card`: new unit tests; `tests/test_cli.py` must still pass
   unchanged.
-- Browser behavior (typeahead, htmx swaps) is not in the suite; smoke
-  tested manually per phase with scratch Playwright + Chromium.
+- Browser behavior (typeahead, htmx swaps, ranking) is not in the
+  suite; smoke tested manually per phase with a scratch Playwright +
+  Chromium script (kept outside the repo).
 
 ## Build order
 
@@ -211,7 +249,6 @@ builder with Generate and Save session.
 
 ## Open items to verify during implementation
 
-- `render_pdf` currently takes an output path; single-card preview
-  needs it to accept an in-memory buffer, or falls back to a temp file.
-- Nested location/industry merge in `YamlStore` (industries live inside
-  a location document) needs its own round-trip test cases.
+- Phase 2: `render_pdf` currently takes an output path; single-card
+  preview needs it to accept an in-memory buffer, or falls back to a
+  temp file.
