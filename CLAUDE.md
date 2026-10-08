@@ -69,6 +69,15 @@ click Edit to type your own. Ids can't be renamed afterwards. Record ids must be
 digits, `.`, `_`, `&`, `-`; not `new`/`fields`/`suggest-id`), and after hand-editing
 `data/aar_codes.yaml` use Discard/Reload (no restart needed).
 
+## Development Workflow
+Brainstorming/design (e.g. via `superpowers:brainstorming`) happens inline in the main
+session. Once a plan is agreed, delegate the work to subagents instead of doing it inline:
+- **Implementation** → dispatch to the `implementer` subagent (`.claude/agents/implementer.md`)
+- **Testing/verification** → dispatch to the `tester` subagent (`.claude/agents/tester.md`)
+
+Both are pinned to Sonnet so brainstorming can run on a different (e.g. stronger) model than
+the mechanical implement/test phases without manual `/model` switching for those steps.
+
 ## Design Decisions
 - YAML first; SQLite backend planned once schema stabilises
 - No static assignments — session file is the mapping for each print job
